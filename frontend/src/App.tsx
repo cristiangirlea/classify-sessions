@@ -1,31 +1,50 @@
-// Scaffold: proves the generated types and the mock route work end to end.
-// The four panels (Purpose, Spend, Coverage, Model choice) replace this page.
 import { useEffect, useState } from 'react';
+import { getSummary } from './api/client';
 import type { SummaryResponse } from './api/contract.gen';
+import { Coverage } from './views/Coverage';
+import { Purpose } from './views/Purpose';
+import { Sessions } from './views/Sessions';
+import { Spend } from './views/Spend';
+
+type State =
+  | { kind: 'loading' }
+  | { kind: 'error'; message: string }
+  | { kind: 'ready'; summary: SummaryResponse };
 
 export function App() {
-  const [summary, setSummary] = useState<SummaryResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState<State>({ kind: 'loading' });
 
   useEffect(() => {
-    fetch('/api/summary')
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((s: SummaryResponse) => setSummary(s))
-      .catch((e: Error) => setError(e.message));
+    let live = true;
+    getSummary().then(
+      (summary) => {
+        if (live) setState({ kind: 'ready', summary });
+      },
+      (e: unknown) => {
+        if (live) setState({ kind: 'error', message: e instanceof Error ? e.message : String(e) });
+      },
+    );
+    return () => {
+      live = false;
+    };
   }, []);
 
-  if (error) return <p>Could not load the summary: {error}</p>;
-  if (!summary) return <p>Loading…</p>;
+  if (state.kind === 'loading') return <p>Loading the summary…</p>;
+  if (state.kind === 'error') return <p role="alert">Could not load the summary: {state.message}</p>;
+
+  const { summary } = state;
   return (
     <main>
-      <h1>Classify Your Sessions</h1>
-      <p>
-        {summary.records.total} records, {summary.sessions.total} sessions, known spend USD{' '}
-        {summary.spend.total_usd}
-      </p>
-      <p>
-        <code>{summary.example_request}</code>
-      </p>
+      <header>
+        <h1>Classify Your Sessions</h1>
+        <p>
+          Generated {summary.generated_at}. Request: <code>{summary.example_request}</code>
+        </p>
+      </header>
+      <Purpose summary={summary} />
+      <Spend summary={summary} />
+      <Coverage summary={summary} />
+      <Sessions summary={summary} />
     </main>
   );
 }

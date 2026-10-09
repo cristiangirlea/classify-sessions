@@ -46,6 +46,19 @@ assistance. Authorship is documented here (sessions, models, tool use) and in PR
   `.handoff/KICKOFF.md` once from the main checkout, which the kickoff forbids; not repeated,
   and `plan.md` was read only from the worktree copy.
 
+### Session B (PR1 to PR4)
+
+- Model: `claude-opus-5-5` (the session's own model id). Effort as `/model` shows it: **not
+  yet recorded**; the coordinator cannot run `/model` and has asked the owner to read it.
+- Location: app-created worktree `<repo>/.claude/worktrees/session-b-kickoff-da09c2`, branch
+  fast-forwarded to `main` by the owner before PR1; one branch per PR from `main`.
+- `/agents`: `go-worker` and `react-worker` were listed among the session's agent types.
+- Disclosure: before `.handoff/` was in the worktree, the coordinator tried to list it in the
+  main checkout; the owner rejected the call before it ran. Later the owner rejected a read of a
+  corpus file the coordinator wanted for the synthetic fixtures' record shape; the fixtures were
+  written from the plan and the contract instead, and the go-worker was asked to report any
+  mismatch with the corpus record shape (PR1 worker reports below).
+
 ### Discarded first setup attempt, carried over from its own notes
 
 Not re-verified by this session unless re-run below. Model and effort as the owner reported
@@ -63,6 +76,10 @@ None in setup (coordinator only, per plan). `go-worker` (`model: opus`) and `rea
 discarded attempt: the Go side carries the accounting, pricing and evaluation logic where a
 subtle error costs most; the React side is a typed rendering of a frozen contract. When
 Session B launches the workers it records here the exact model id each alias resolved to.
+
+Resolved in Session B, PR1, as each worker reported its own model id: `opus` → `claude-opus-5-5`
+(go-worker), `sonnet` → `claude-sonnet-5-5` (react-worker). Evidence level: worker's own
+statement (**unverified** by command).
 
 ### Held-out labels (PR0b)
 
@@ -121,6 +138,9 @@ taxonomy is not guaranteed.
 | Discarded attempt | `claude-code-guide` subagent (docs lookup, not a worker) | settings keys, agent and skill frontmatter, rule syntax, hook exit codes | applied in the draft and reused here; **unverified** beyond the docs answer |
 | PR0b | one-off Node script in the session's scratch folder (not in the repository) | validates the three examples against their schemas (draft-07 subset: type, required, closed objects, enum, `$ref` across files, min/max, pattern), checks every object schema is closed with every key required, recomputes every derived number in the examples, compares the labels with the kickoff block | found AI was wrong #2; after the fix all checks pass. The durable checks are PR0c's `TestExamplesDecodeStrictly` and `contract:check` |
 | PR0a | `/privacy-scan`, `/review-step`, `/corpus-check` | the skills are added by PR0a itself and load only in a session started after it is merged | their SKILL.md steps were run by hand; the privacy scan is the same script the skill runs |
+| PR1 | `go-worker` and `react-worker` subagents, launched in one message | PR1 task lists (PROMPTS.md B5, B6) | both reported; claims rerun by the coordinator (Evidence, PR1) |
+| PR1 | `/corpus-check`, `/privacy-scan`, `/review-step` (loaded as skills in Session B) | evidence regeneration, scan, review | blocks and results under Evidence, PR1 |
+| PR1 | built-in browser preview (`.claude/launch.json`, `frontend-mock`) | page on `dev:mock` | browser-checked (mock) |
 
 ## Evidence
 
@@ -164,12 +184,105 @@ taxonomy is not guaranteed.
 | Page on `dev:mock` | built-in browser, page text and console | "40 records, 3 sessions, known spend USD 1.413" and the example request; no console errors | browser-checked (mock) |
 | Dependency audit | `npm audit` after `npm ci` | 3 findings, all in the test runner: `vitest` (critical, direct), `tinypool` (critical) and `@vitest/mocker` (moderate); the fix needs `vitest` 5 (major) | command output |
 
+### PR1 worker reports and coordinator verification
+
+**go-worker** (reported model id `claude-opus-5-5`). Summary of its report: added
+`internal/model`, `internal/ingest`, `internal/pricing`, `internal/summary`,
+`internal/crosscheck` (a package the plan's layout does not list; the cross-check needed a
+home) and rewrote `cmd/sessions` (`summary`, `prompts`, `crosscheck`, `version` 0.1.0);
+`internal/contract` unchanged. All 14 named PR1 tests and `TestExamplesDecodeStrictly` pass,
+plus six extra tests (synthetic directory accounting 34 = 27 + 3 + 2 + 2, synthetic per-session
+costs 0.08955, input hint, `prompts` exclusion with a temporary labels file, mandatory
+`--input`, summary command writes contract JSON). It broke the timestamp sort and the dedupe
+temporarily and saw the relevant tests fail, then restored them. Every planning fact matched
+what the code measured. Design choices it reported, different from the plan's outline:
+
+- One event per record, not per content block: `ToolCalls []ToolCall` and
+  `ToolResults []ToolResult` replace single `Tool`, `ToolUseID`, `Outcome`; `Text` (prompts
+  only) and `FirstPrompt` are `json:"-"`, and a test checks marshalled sessions carry no
+  prompt text.
+- Known blocks: `text` and `tool_result` in user records, `text` and `tool_use` in assistant
+  records; anything else (including `thinking`, `image`, absent from the corpus) makes the
+  record unknown.
+- Malformed also covers a user or assistant record without a uuid, a usage object without
+  input or output tokens, and a non-string `sessionId`; a bad shape wins over an unknown block.
+- `usage: null` counts as missing usage; cache fields count as present only when both are.
+- Dedupe and conflicts apply only among parsed user and assistant records.
+- Records without a `sessionId` go to the file's session (first `sessionId` in the file, else
+  the file name).
+- USD is rounded to 1e-9; `session_list` sorted by id; `by_model` by model name.
+- Cross-check matches OTel requests on session id, model and timestamp (the OTel file has no
+  request id); every matched pair had equal token counts.
+- `prompts` prints JSON lines `{"session_id","first_prompt"}` to stdout and reads only
+  `labels[].session_id`. Not run against the corpus in PR1.
+
+Not done: `evaluate`, `serve`, classifier, HTTP, model choice (PR2, PR3). Contract notes, none
+blocking: `input_hint` is the value as given, so `--input ../fixtures/claude-code` from
+`backend/` yields `../fixtures/claude-code` where the example shows `fixtures/claude-code`
+(relative either way; kept); `classifier.method` is `none` in PR1.
+
+| Check | Command | Result | Level |
+| --- | --- | --- | --- |
+| Go suite (coordinator rerun) | `go vet ./... && go test ./... -count=1` | `ok` for `cmd/sessions`, `internal/contract`, `internal/crosscheck`, `internal/ingest`, `internal/pricing`, `internal/summary`; `internal/model` no test files | unit-tested |
+| Corpus numbers | `/corpus-check` (block below) | match every planning fact | command output |
+| Total from a second source | `crosscheck` against the OTel oracle | residual +0.000000 after the four named differences | command output |
+| No path in output | `input_hint` in `evidence/summary.json` | `../fixtures/claude-code` | command output |
+| Synthetic fixtures | one-off Node script (scratch folder): line counts, JSON validity, record types, USD at the planned rates, no CRLF | 34 nonblank, 33 valid JSON; per-session USD as in `fixtures/synthetic/README.md` | command output |
+| Privacy scan, first run | `node .claude/skills/privacy-scan/scan.mjs` | `68 files scanned, 34 first-prompt fingerprints, 4 hit(s)`: `system-reminder-tag` at `backend/internal/ingest/ingest.go:330`, `:332` and `backend/internal/model/model.go:67` (the defensive stripping code and its comment); `windows-drive-path` at `backend/internal/summary/summary_test.go:167` (an invented drive-letter path, drive C, folder `data`, as input to `TestInputHint`) | command output |
+| Privacy scan, after the narrow allowance (decision below) | same | `68 files scanned, 34 first-prompt fingerprints, 0 hit(s)`, exit 0 | command output |
+| Scan still catches leaks | temporary `planted_test.go` and `planted.go` at the root | 6 hits, exit 1: the invented drive-C `data` folder allowed only in the test file; other drive letters (one on the same line as an allowed path), a Windows user-profile path, and the tag in a non-allowed file all caught; files removed, rerun 0 hits | command output |
+
+**go-worker follow-up** (PROMPTS.md B7, same worker resumed; `claude-opus-5-5`). Added three
+assertions, test files only: per-model input, output, cache-read and cache-write USD in
+`TestUsageBilledOncePerRecord` (values measured by this code, read from the pricing package
+because the contract has no per-model components; the OTel cross-check confirms per-model
+totals, not the split); all 22 duplicates in session `b7dab20e…` in `TestCorpusAccounting`;
+a `b7dab20e…` subtest in `TestFirstPromptUsesTimestampOrder` (lines 45–66 are byte copies of
+lines 1–22 and are the only duplicates; parsed records never go back in time; first prompt is
+line 1). It used a temporary probe test that printed only numbers, line numbers and one uuid,
+and deleted it.
+
+| Check | Command | Result | Level |
+| --- | --- | --- | --- |
+| Duplicate block, independent of the parser | `wc -l` and `cmp` of lines 1–22 against 45–66 of the `b7dab20e…` file | `66`; identical | command output |
+| Probe removed | `ls backend/internal/summary` | `summary.go`, `summary_test.go` | command output |
+| Go suite after the follow-up | `gofmt -l . && go vet ./... && go test ./... -count=1` | no gofmt output; `ok` for the same six packages | unit-tested |
+
+### Corpus check (PR1)
+
+- Manifest: 34/34 OK
+- Go tests: ok cmd/sessions; ok internal/contract; ok internal/crosscheck; ok internal/ingest; ok internal/pricing; ok internal/summary (internal/model: no test files)
+- Records: 1107 = 1084 parsed + 1 malformed + 0 unknown + 22 duplicate
+- Known spend: USD 38.01359025 (17 sessions incomplete)
+- Held-out: not available in this PR (no `evaluate` subcommand until PR2)
+- Cross-check: oracle 41.119147 over 465 events; 455 matched, 0 token mismatches; [1m] +1.5357, Sonnet 5 +0.4462, 10 oracle-only +1.1426, 2 sidechain log-only −0.0190; residual +0.000000
+- Evidence level: unit-tested (Go tests) + command output in evidence/
+
+**react-worker** (reported model id `claude-sonnet-5-5`). Summary of its report: added
+`src/api/client.ts` (status check, `ErrorResponse` text as `code: message (HTTP status)`, JSON
+object check, then a cast to the generated types with no runtime shape validation; the drift
+tests cover shape), `src/lib/format.ts` (null → "not measured"; incomplete cost → "at least USD
+… (lower bound, cost incomplete)"; null rule → "no rule matched"), views `Purpose`, `Spend`,
+`Coverage`, `Sessions`, `src/styles.css`, and edited `App.tsx` and `main.tsx`. Tests:
+`test/format.test.ts` (8) and `test/contract.test.ts` (15: client parsing and error paths, and
+the summary example's internal consistency within 1e-9). No package installed beyond the lock
+file; `npm ci` reported the 3 known audit findings. Not done: browser check, jsdom test, live
+backend, model-choice panel (PR3). Contract notes, none blocking: no per-model completeness
+field, so by-model cost is labelled "known" and the flags show where it is partial.
+
+| Check | Command | Result | Level |
+| --- | --- | --- | --- |
+| Frontend chain (coordinator rerun) | `npm run contract:check && npm run typecheck && npm test && npm run build` | `contract.gen.ts matches contract/`; typecheck no output; `Test Files 2 passed (2)`, `Tests 23 passed (23)`; `35 modules transformed`, built | command output |
+| Page on `dev:mock` | built-in browser via `.claude/launch.json` (`frontend-mock`); page text, console, network | four views and the header render the example (40 records, "at least USD 1.4130 (lower bound, cost incomplete)", 1 disagreement); console has only Vite and React DevTools messages; every request to `localhost:5173` | browser-checked (mock) |
+| Observation | same | a horizontal scrollbar at the pane's width (wide Sessions table); non-blocking, for PR2 | browser-checked (mock) |
+
 ### Reviews (`/review-step` steps run by hand; the skills load only in a later session)
 
 | PR | Blocking | Non-blocking | Checks |
 | --- | --- | --- | --- |
 | PR0a | none | `.claude/hooks/guard-bash.mjs` is not in the kickoff's PR0a list; included because `.claude/settings.json` calls it | 22 paths, all coordinator-owned; `contract/` and `fixtures/` unchanged; suites not applicable (no code); privacy scan 0 hits; document numbers trace to the PR0a checks; SPEC planning numbers labelled unverified |
 | PR0c | none | `npm audit` findings in `vitest` (decision below); SPEC.md and README.md describe the finished system, so some sentences have no code behind them yet | backend and frontend chains pass locally; paths: `backend/**`, `frontend/**` and documents; contract and fixtures unchanged; privacy scan 0 hits |
+| PR1 (`/review-step`, run as a skill) | none | scanner allowance changed by the coordinator (decision in PR1 table); synthetic README names record timestamps (data, not work times); event model and `internal/crosscheck` differ from the plan outline; `input_hint` keeps `../`; `npm audit` findings unchanged; page scrolls sideways at a narrow width; worker model ids self-reported; Session B effort not yet recorded. Two gaps against the acceptance list (per-model components, the second out-of-order file and the duplicates' session) were closed by the B7 follow-up | 15 named tests present; Go `ok` for six packages; frontend chain green (23 tests); privacy scan 0 hits; `contract/`, corpus, OTel and labels unchanged |
 | PR0b | none | the example consistency check is a one-off scratch script; the durable drift tests (PR0c) check shape, not arithmetic | paths: `contract/**`, `fixtures/labels/heldout.json` and documents only; no fixture data, `backend/` or `frontend/` path; suites not applicable; privacy scan 0 hits; `.handoff/` untracked; `git diff --check` clean |
 
 ## Planning facts awaiting tests
@@ -187,6 +300,12 @@ Confirmed by command so far: 34 files, 1107 nonblank lines, manifest 34/34 OK, z
 | known spend USD 38.0136 at base rates (Sonnet 4.5 3/15, Opus 4.1 15/75, Haiku 4.5 1/5, Sonnet 5 2/10; cache read 0.1x, 5-minute write 1.25x) | `TestUsageBilledOncePerRecord`, `TestPriceTableComponentsAndAliases` |
 | OTel oracle 41.119147, difference explained by Sonnet 5 priced 3/15, `[1m]` priced 6/22.50, 10 missing-usage requests, 2 Haiku sidechains absent | `TestOTelCrossCheck` |
 | model-choice verdict on this corpus: `insufficient_evidence` | `TestCompareModelsSuppliedCorpus` |
+
+PR1 status: confirmed by test and the PR1 corpus check: the accounting, the diagnostics, the
+22 duplicates all in `b7dab20e…`, both out-of-order files, the known spend with per-model
+components, and the OTel reconciliation. Refined: `b7dab20e…` is out of order only because of
+its duplicate block (SPEC finding 9), so only `3888cf6f…` needs the timestamp sort for its
+first prompt. The model-choice verdict waits for PR3.
 
 ## Decisions taken in setup
 
@@ -211,6 +330,21 @@ Confirmed by command so far: 34 files, 1107 nonblank lines, manifest 34/34 OK, z
 | Contract examples use three fake session ids and small invented numbers | examples must not look like corpus findings |
 | Held-out provenance in the labels file, SPEC.md and NOTES.md in identical words | owner's instruction; the agreement number is read against it |
 | Pricing source URL `https://docs.claude.com/en/docs/about-claude/pricing` allowed by the scan | **unverified** (web tools are denied by settings); PR1 must confirm the rates it encodes |
+
+## Decisions taken in PR1
+
+| Decision | Why |
+| --- | --- |
+| SPEC decision 3: same uuid and identical canonical JSON = duplicate (billed once); same uuid, different content = malformed | plan definition; the synthetic session `…0003` has both a byte copy and a key-reordered copy, so a byte comparison would fail the test |
+| SPEC decision 4: a session's cost is incomplete on missing usage, unknown model, no cache fields, `[1m]`, or an attributed malformed or unknown record; sidechain alone does not make it incomplete | plan's list; the known part is still reported as a lower bound |
+| SPEC decisions 5 and 6: `[1m]` at base rates and Sonnet 5 at 2/10, both differing from the OTel generator | the cross-check names each difference exactly; whether any `[1m]` request exceeds the threshold is untested, and the rates were not checked against the live page (web denied) |
+| `classifier.method` is `none` and every session is `unknown` in PR1; `model_choice` is a schema-valid placeholder (verdict `no_comparison_possible`, statement "Model-choice analysis is not computed in this build.") | coordinator's contract answers: both keys are required by the frozen contract, and PR2 and PR3 compute them |
+| `TestLiveSummaryMatchesContract` skips item keys only under three empty arrays (`classifier.heldout.disagreements[]`, `model_choice.categories[]`, `model_choice.model_totals[]`) and fails once one is populated on both sides | PR2 and PR3 must remove each entry as they fill it |
+| `source.input_hint` is the `--input` value as given (relative), only the last element if absolute | never an absolute path; `../fixtures/claude-code` from `backend/` is kept |
+| Synthetic edge cases live in `fixtures/synthetic/` with expected numbers in its README, written before the parser | the tests check against numbers fixed by someone other than the code's author |
+| `.claude/launch.json` (`frontend-mock`) added | the built-in browser preview needs a named launch configuration |
+| `internal/crosscheck` added to the backend layout | the plan names the `crosscheck` command but no package for it |
+| Privacy scan: `ingest.go` and `model.go` may name `<system-reminder>` (that rule only); Go tests may use the invented drive-C `data` folder path (that prefix and the drive-path rule only) | the hits were the plan's defensive stripping code and a test of absolute `--input` handling, not leaks; user path, username, email, other drive paths and the tag elsewhere are still caught (planted-leak check above) |
 
 ## AI was wrong
 
