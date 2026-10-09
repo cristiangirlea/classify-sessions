@@ -90,6 +90,29 @@ dont run any ci, do it locally
 you run any test locally not in the github
 ```
 
+### 10. Owner → coordinator, after PR0c opened
+
+```text
+Read .handoff/KICKOFF.md and follow the Session B instructions exactly.
+```
+
+The coordinator re-read the kickoff (the owner had revised its Session B section; see the
+note after Appendix A) and did not start: PR0c was not merged and the worker agents were not
+loaded in this session.
+
+### 11. Owner → coordinator
+
+```text
+continue on seasion b
+```
+
+### 12. Owner's answers to the coordinator's two questions (**paraphrase**: picked from options)
+
+- "Is PR0c approved, so I can mark it ready and squash-merge it?" → "Approved, merge it".
+- "How should Session B run its workers?" → "New session (Recommended)": the owner opens a fresh
+  session in the project folder after the merge, checks `/agents`, and gives it the Session B
+  instruction.
+
 ## Discarded first setup attempt, carried over verbatim from its PROMPTS.md
 
 ### D1. Owner → coordinator, before Step 0
@@ -316,6 +339,20 @@ Start PR1 now: create the branch, launch go-worker and react-worker in parallel 
 PR1 task lists from the plan, integrate, verify, open the draft PR, and report what you
 did, what passed and what you need from the owner.
 ````
+
+Revision: after PR0c opened, the owner changed two places in the Session B section of
+`.handoff/KICKOFF.md`. Verbatim, the reading list now says:
+
+```text
+merged. Read CLAUDE.md, AGENTS.md, PLAN.md, SPEC.md, NOTES.md, PROMPTS.md, contract/ and `.handoff/plan.md`
+```
+
+and the last ground rule is:
+
+```text
+- Record no times anywhere. If the owner says to stop, apply the plan's cut order and
+  write the remainder into NOTES.md.
+```
 
 ### Appendix B: `.handoff/KICKOFF.md` (version read by the discarded attempt), verbatim from its PROMPTS.md
 
