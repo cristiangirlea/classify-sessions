@@ -22,7 +22,7 @@ budget counts minutes worked across sessions, including the discarded first setu
 | Pre-repo planning (plan.md) | n/a | not measured | not measured | not measured; disclosed | n/a | n/a |
 | PR0 first attempt, one 49-file PR (discarded) | 25 | 19:41 | 20:00 | 19 | 19 | discarded by the owner: setup must land in small reviewable steps; repository recreated from the fixtures commit |
 | Step 0, Session A (two runs, see NOTES) | 0 | before T0 | 21:18 | n/a | 19 | first run stopped: `.handoff/` missing from the worktree; owner copied it in |
-| PR0a documents and steering | 10 | 21:18 | | | | |
+| PR0a documents and steering | 10 | 21:18 | 21:26 | 8 | 27 | none; draft PR opened 21:26, ready for approval 21:26 |
 | PR0b contract and held-out labels | 5 | | | | | |
 | PR0c backend and frontend scaffolds | 10 | | | | | |
 | PR1 data path + page | 40 | | | | | |
