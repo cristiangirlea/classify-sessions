@@ -144,6 +144,8 @@ taxonomy is not guaranteed.
 | PR2 | `go-worker` (fresh) and `react-worker` launched in one message; react-worker resumed twice | PROMPTS.md B11 to B15 | both reported; claims rerun by the coordinator (Evidence, PR2) |
 | PR2 | plan mode (one turn) | the coordinator's plan for finishing PR2, approved by the owner | the plan file could not be written under the user's Claude folder (denied by settings) |
 | PR2 | `/corpus-check`, `/review-step`, `/privacy-scan`; built-in browser (`frontend-live-8081`); curl script | evidence, review, scan, live checks | results under Evidence, PR2 |
+| PR3 | both workers resumed in one message (B17, B18); coordinator wrote the Docker files; the app's "Create PR" command | model choice, panel, Docker | react-worker reported; go-worker's report never arrived (verified from code and evidence instead) |
+| PR4 | `/corpus-check`; `docker compose build`, `up -d`, curl script, built-in browser on 8088, `down`; scratch scripts (JSON leaf diff, quote check); `/review-step`, `/privacy-scan` | evidence, docker check, documents | results under Evidence, PR4 |
 
 ## Evidence
 
@@ -454,12 +456,58 @@ checks.
 | Frontend chain (coordinator rerun) | `npm test && npm run typecheck && npm run build` | `contract.gen.ts matches contract/`; `Test Files 4 passed (4)`, `Tests 44 passed (44)`; typecheck no output; built | unit-tested |
 | Panel rules | `grep` of `ModelChoice.tsx` for `table-scroll`, `dangerouslySetInnerHTML`, `http(s)://` | 2 wrappers; neither of the others | command output |
 
+**go-worker** (the PR2 worker resumed, B17). Its PR3 report never reached the coordinator: the
+hand-back arrived without content, and the PR was opened and then merged by the owner before a
+resend was asked for. What the coordinator verified instead, from the merged code: `go build`,
+`go vet` and `go test` pass for all 10 packages including `internal/modelchoice`; the seven
+named model-choice tests exist; `TestCompareModelsSuppliedCorpus` asserts Opus 4.1 n=12 mean
+2.386, Sonnet 4.5 n=18 mean 0.471, 27 corrections in 8 sessions, 59 failures of 414 known
+results, 2 mixed and 4 `[1m]` sessions, 0 excluded, the six comparable categories, and a cost
+ratio of 5.06; the PR4 corpus check reproduces each of these in `evidence/summary.json`, and
+every PR3 planning fact matches (Corpus check, PR4). The worker's model id for PR3 is not
+recorded (same worker as PR2: `claude-opus-5-5`, its own statement then).
+
+PR3 was opened ready for review at the owner's request ("Create PR") before `compose up`,
+`/corpus-check`, the live panel check and `/review-step` had run, and was merged by the owner
+with those items listed as not done in its description. All four ran in PR4 below.
+
+### Corpus check (PR4)
+
+- Manifest: 34/34 OK
+- Go tests: ok cmd/sessions; ok internal/classify; ok internal/contract; ok internal/crosscheck; ok internal/evaluate; ok internal/httpapi; ok internal/ingest; ok internal/modelchoice; ok internal/pricing; ok internal/summary (internal/model: no test files)
+- Records: 1107 = 1084 parsed + 1 malformed + 0 unknown + 22 duplicate
+- Known spend: USD 38.01359025 (17 sessions incomplete)
+- Held-out: 10/10 (1); disagreements: none (recomputed from the frozen rules)
+- Cross-check: reconciliation residual +0.000000 (unchanged)
+- Model choice (new in `evidence/summary.json`; it held the PR1 placeholder until this run): Opus 4.1 n=12 mean USD 2.386, Sonnet 4.5 n=18 mean 0.471, Sonnet 5 n=4 mean 0.223; 27 corrections in 8 sessions; 59 tool failures of 414 known results; comparable: debug, implement, refactor, test, review, research (none supported); verdict `insufficient_evidence`, cost ratio 5.063
+- Evidence level: unit-tested (Go tests) + command output in evidence/
+
+### PR4 Docker check
+
+| Check | Command | Result | Level |
+| --- | --- | --- | --- |
+| Build | `docker compose build` | `Image classify-sessions-backend Built`, `Image classify-sessions-web Built` | docker-checked |
+| Up | `docker compose up -d`; `docker compose ps` | `backend running 8080/tcp` (not published), `web running 127.0.0.1:8088->80/tcp`; nginx started with the config | docker-checked |
+| API through nginx | curl script on `http://127.0.0.1:8088` | GET and HEAD `/api/summary` `200`; `/api/models` `200`; `/api/nope` `404` JSON; POST `405` JSON with `Allow: GET, HEAD`; foreign `Host` `403` JSON (nginx); foreign `Origin` `403`; `Sec-Fetch-Site: cross-site` `403` (API); the API's five headers pass through | docker-checked |
+| Same numbers as evidence | leaf diff of the Docker `/api/summary` against `evidence/summary.json` | only `generated_at` and `source.input_hint` differ (`claude-code` in the container: `--input` is the absolute `/data/claude-code`, reduced to its last element by the no-absolute-path rule) | docker-checked |
+| `/api/models` | JSON compare with the summary's `model_choice` | equal; verdict `insufficient_evidence` | docker-checked |
+| Page | built-in browser on `http://127.0.0.1:8088/` | five panels (Purpose, Spend, Coverage, Sessions, Model choice); 1,107 records; "at least USD 38.0136 (lower bound, cost incomplete)"; agreement 100.0%; the generated statement; synthetic-fixture sentence; 6 `thin` and 2 `not comparable` badges; no sideways scroll; console empty; 4 requests, all to `127.0.0.1:8088` | docker-checked |
+| CSP keeps the bars | 8 elements with inline `width` | widths 256, 124, 40, … px (React sets them through the CSSOM, which `default-src 'self'` allows) | docker-checked |
+| Page headers; foreign Host on the page | curl | `200 text/html`; `X-Content-Type-Options: nosniff`; CSP `default-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`; foreign Host `403` JSON | docker-checked |
+| API has no route out | `docker network inspect classify-sessions_internal` | `internal network: true` | docker-checked |
+| Down | `docker compose down`; curl 8088 | networks removed; `000` | docker-checked |
+
+Nothing broke, so nothing was fixed. Not checked: an outbound request attempted from inside the
+API container (the image has no shell or client to try one).
+
 ### Reviews (`/review-step` steps run by hand; the skills load only in a later session)
 
 | PR | Blocking | Non-blocking | Checks |
 | --- | --- | --- | --- |
 | PR0a | none | `.claude/hooks/guard-bash.mjs` is not in the kickoff's PR0a list; included because `.claude/settings.json` calls it | 22 paths, all coordinator-owned; `contract/` and `fixtures/` unchanged; suites not applicable (no code); privacy scan 0 hits; document numbers trace to the PR0a checks; SPEC planning numbers labelled unverified |
 | PR0c | none | `npm audit` findings in `vitest` (decision below); SPEC.md and README.md describe the finished system, so some sentences have no code behind them yet | backend and frontend chains pass locally; paths: `backend/**`, `frontend/**` and documents; contract and fixtures unchanged; privacy scan 0 hits |
+| PR4 (`/review-step`, run as a skill; base `origin/main`) | none | PR3 merged before its review, corpus check and Docker check (all run in PR4); the go-worker's PR3 report never arrived; README states the untested items; no outbound attempt tried from inside the API container | documents and `evidence/summary.json` only; `backend/`, `frontend/`, `contract/`, `fixtures/` unchanged; all 25 PLAN.md test names exist; Go `ok` for 10 packages; frontend `Tests 44 passed (44)`, build ok; privacy scan 0 hits; no clock times; `git diff --check` clean |
+| PR3 | not run | merged by the owner before `/review-step`; its checks ran in PR4 | — |
 | PR2 (`/review-step`, run as a skill; base `origin/main`) | none | rule count 25 reported, 24 in code (AI was wrong #3); held-out 10/10 is a consistency check, not accuracy; go-worker saw aggregate held-out predictions (not labels); react-worker ran `git diff --stat` once; a hung read-only shell command from the go-worker's run; page hint names 8080 without `--labels`; `--bind-any` defaults to `0.0.0.0:8080`; live check on 8081 | 3 named PR2 tests present, `TestLiveSummaryMatchesContract` skips only the two PR3 paths; Go `ok` for 9 packages; frontend `Tests 31 passed (31)`, `contract.gen.ts matches contract/`, build ok; privacy scan 0 hits; `contract/` and `fixtures/` unchanged; no clock times; `git diff --check` clean |
 | PR1 (`/review-step`, run as a skill) | none | scanner allowance changed by the coordinator (decision in PR1 table); synthetic README names record timestamps (data, not work times); event model and `internal/crosscheck` differ from the plan outline; `input_hint` keeps `../`; `npm audit` findings unchanged; page scrolls sideways at a narrow width; worker model ids self-reported; Session B effort not yet recorded. Two gaps against the acceptance list (per-model components, the second out-of-order file and the duplicates' session) were closed by the B7 follow-up | 15 named tests present; Go `ok` for six packages; frontend chain green (23 tests); privacy scan 0 hits; `contract/`, corpus, OTel and labels unchanged |
 | PR0b | none | the example consistency check is a one-off scratch script; the durable drift tests (PR0c) check shape, not arithmetic | paths: `contract/**`, `fixtures/labels/heldout.json` and documents only; no fixture data, `backend/` or `frontend/` path; suites not applicable; privacy scan 0 hits; `.handoff/` untracked; `git diff --check` clean |
@@ -479,6 +527,9 @@ Confirmed by command so far: 34 files, 1107 nonblank lines, manifest 34/34 OK, z
 | known spend USD 38.0136 at base rates (Sonnet 4.5 3/15, Opus 4.1 15/75, Haiku 4.5 1/5, Sonnet 5 2/10; cache read 0.1x, 5-minute write 1.25x) | `TestUsageBilledOncePerRecord`, `TestPriceTableComponentsAndAliases` |
 | OTel oracle 41.119147, difference explained by Sonnet 5 priced 3/15, `[1m]` priced 6/22.50, 10 missing-usage requests, 2 Haiku sidechains absent | `TestOTelCrossCheck` |
 | model-choice verdict on this corpus: `insufficient_evidence` | `TestCompareModelsSuppliedCorpus` |
+
+PR4 status: the model-choice verdict `insufficient_evidence` and every PR3 planning fact are
+confirmed by `TestCompareModelsSuppliedCorpus` and the PR4 corpus check.
 
 PR1 status: confirmed by test and the PR1 corpus check: the accounting, the diagnostics, the
 22 duplicates all in `b7dab20e…`, both out-of-order files, the known spend with per-model
@@ -538,6 +589,33 @@ first prompt. The model-choice verdict waits for PR3.
 | `.claude/launch.json` entry `frontend-live-8081` | the live browser check with the API on 8081 |
 | Worker reports' contract notes accepted as they are: `--bind-any` without `--listen` listens on `0.0.0.0:8080` with the Host check still loopback; a HEAD error has no body (HTTP forbids one); 403 before 405 before 404 | none conflicts with the frozen contract; PR4 revisits `--bind-any` for compose |
 
+## Decisions taken in PR3 and PR4
+
+| Decision | Why |
+| --- | --- |
+| Docker files under `docker/` (`backend.Dockerfile`, `frontend.Dockerfile`, `nginx.conf`) with the build context at the root, not the plan's `backend/Dockerfile` and `frontend/Dockerfile` | the owner asked the coordinator to write them (B16), and AGENTS.md forbids the coordinator to edit `backend/` or `frontend/` after PR0c |
+| Fixtures mounted read-only at `/data`, not copied into the image | the binary needs only the paths its flags name; the image stays free of data |
+| API container: `internal: true` network only, read-only root, distroless non-root, `--bind-any` inside the container | no route out; `--bind-any` only lets nginx reach it on the compose network, and the Host check stays loopback |
+| nginx checks Host (a `default_server` returning 403 JSON) and Origin (allowlist of the two loopback origins on 8088) before rewriting `Host` to `127.0.0.1:8080` | the rewrite would otherwise make every request look local and bypass the API's DNS-rebinding check |
+| Static-page headers only on `location /`; `/api/` passes the API's own headers | no duplicated headers, and the API keeps `default-src 'none'` |
+| SPEC decision 11 quotes the generated advice statement; a script checks it is verbatim | the plan: the "what to tell the platform lead" line quotes the generated statement |
+| SPEC finding 10 and decision 11 written only after reading `evidence/summary.json` | the plan: SPEC entries for the extra after reading the endpoint output |
+
+## Where AI helped
+
+- **Writing the code.** Every line of `backend/` and `frontend/` was written by the `go-worker`
+  and `react-worker` subagents from task lists; the coordinator never edited either directory
+  after setup.
+- **Checking its own claims.** The most useful pattern was a second source for every headline
+  number: the OTel cross-check for the total, a byte comparison outside the parser for the
+  duplicate block, a JSON leaf diff between Docker and `evidence/`, and a script for the quoted
+  advice. Each turned a worker's "it passes" into something checked independently.
+- **Finding the corpus's shape.** The workers' reports surfaced facts the plan did not have: the
+  22 duplicates are one replayed block (SPEC finding 9), and the definitions' hard cases on the
+  dev prompts (NOTES, PR2).
+- **Holding the line on scope.** The contract stayed frozen for the whole run; every contract
+  question was answered without changing it.
+
 ## AI was wrong
 
 | # | Claim | Who | How caught | Fix |
@@ -546,8 +624,25 @@ first prompt. The model-choice verdict waits for PR3.
 | 2 | The contract examples are internally consistent | discarded setup attempt (its checks passed the strict-decode test, which tests shape, not arithmetic) | PR0b consistency script: 1 sidechain record in `diagnostics`, no `sidechain` flag on any model | flag added to the Sonnet row of `contract/examples/summary.json` |
 | 3 | rules-v1 has 25 ordered rules, and `TestClassifyRulesTableDriven` covers all 25 | PR2 go-worker report | coordinator `grep` of the rule table in `backend/internal/classify/classify.go`: 24 `rule(...)` entries, 24 distinct ids | SPEC decision 7 says 24; the test's coverage of every rule stands as reported (unit-tested), the count does not |
 
+Also worth recording, not claims a worker made but slips in process: the react-worker ran
+`git diff --stat` once against the no-git rule (PR2) and once ended mid-edit without a report;
+the go-worker's PR3 report never arrived; the coordinator once wrote literal drive paths (three
+lines) into NOTES.md when describing a scan check, caught by the privacy scan and reworded (PR1); the
+coordinator's first SPEC draft of decision 7 put review before plan in the rule order, caught
+by reading the rule table.
+
 ## Another day
 
-Drafted in setup, refined at close: real-session validation; an LLM or embedding classifier
-compared against rules-v1 on the same held-out set; an explicit correction signal (OTel
-`decision: reject`) for the model-choice analysis; about 30 real sessions per model per category.
+- **Real sessions.** Validate the parser and rules on real logs (with consent and a scrubbing
+  step), where record shapes and prompt wording are not templated.
+- **A better classifier, judged fairly.** Hand-label a held-out set by a person, then compare
+  rules-v1 with an LLM or embedding classifier on it; report a confusion matrix, not one
+  agreement figure.
+- **A real correction signal.** Capture an explicit signal (OTel `decision: reject`, a revert,
+  a re-edit of the same lines) instead of keyword rules, and collect about 30 sessions per model
+  per category so the model-choice analysis can reach a supported verdict.
+- **Prices from a dated source in the repository**, re-checked against the live page by a
+  command, and a test for whether any `[1m]` request crosses the long-context threshold.
+- **Smaller gaps:** move `vitest` to the major version that clears the audit findings; a test
+  that the API container cannot reach the network; a README note for machines without Docker
+  Desktop; the page's error hint naming `--labels`.

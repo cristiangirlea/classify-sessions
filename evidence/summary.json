@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-09T22:43:22Z",
+  "generated_at": "2026-10-09T23:22:08Z",
   "source": {
     "files": 34,
     "input_hint": "../fixtures/claude-code"
@@ -772,18 +772,588 @@
   ],
   "example_request": "curl -s http://127.0.0.1:8080/api/summary",
   "model_choice": {
-    "models": [],
-    "categories": [],
-    "model_totals": [],
+    "models": [
+      "claude-opus-4-1",
+      "claude-sonnet-4-5",
+      "claude-sonnet-5"
+    ],
+    "categories": [
+      {
+        "category": "debug",
+        "comparable": true,
+        "supported": false,
+        "reason": "fewer than three sessions for at least one model",
+        "cells": [
+          {
+            "model": "claude-opus-4-1",
+            "category": "debug",
+            "sessions": 3,
+            "mixed_model_sessions": 0,
+            "long_context_sessions": 0,
+            "complete_cost_sessions": 0,
+            "mean_known_usd": 3.38346025,
+            "median_known_usd": 3.2506275,
+            "total_known_usd": 10.15038075,
+            "user_messages": 27,
+            "correction_messages": 4,
+            "correction_rate": 0.14814814814814814,
+            "corrected_sessions": 1,
+            "tool_results_known": 49,
+            "tool_failures": 8,
+            "tool_failure_rate": 0.16326530612244897,
+            "unknown_outcome_results": 0,
+            "session_ids": [
+              "3888cf6f-f20f-4113-9752-143c54690953",
+              "a8989c8d-d9b5-4060-83e4-470af72a16e3",
+              "b6e5b315-c446-41de-8e5b-07f85039b0e0"
+            ]
+          },
+          {
+            "model": "claude-sonnet-4-5",
+            "category": "debug",
+            "sessions": 1,
+            "mixed_model_sessions": 0,
+            "long_context_sessions": 0,
+            "complete_cost_sessions": 1,
+            "mean_known_usd": 0.1393794,
+            "median_known_usd": 0.1393794,
+            "total_known_usd": 0.1393794,
+            "user_messages": 2,
+            "correction_messages": 0,
+            "correction_rate": 0,
+            "corrected_sessions": 0,
+            "tool_results_known": 4,
+            "tool_failures": 0,
+            "tool_failure_rate": 0,
+            "unknown_outcome_results": 0,
+            "session_ids": [
+              "46005915-6314-4bc3-9f01-e1d44787f85f"
+            ]
+          }
+        ]
+      },
+      {
+        "category": "implement",
+        "comparable": true,
+        "supported": false,
+        "reason": "fewer than three sessions for at least one model",
+        "cells": [
+          {
+            "model": "claude-opus-4-1",
+            "category": "implement",
+            "sessions": 2,
+            "mixed_model_sessions": 0,
+            "long_context_sessions": 0,
+            "complete_cost_sessions": 1,
+            "mean_known_usd": 1.127047875,
+            "median_known_usd": 1.127047875,
+            "total_known_usd": 2.25409575,
+            "user_messages": 5,
+            "correction_messages": 0,
+            "correction_rate": 0,
+            "corrected_sessions": 0,
+            "tool_results_known": 13,
+            "tool_failures": 1,
+            "tool_failure_rate": 0.07692307692307693,
+            "unknown_outcome_results": 0,
+            "session_ids": [
+              "6061f190-d64b-41d4-8d7b-de81a3d6b6ee",
+              "9161e14f-693a-44c3-8709-482903b4cd2a"
+            ]
+          },
+          {
+            "model": "claude-sonnet-4-5",
+            "category": "implement",
+            "sessions": 4,
+            "mixed_model_sessions": 0,
+            "long_context_sessions": 0,
+            "complete_cost_sessions": 1,
+            "mean_known_usd": 0.682887113,
+            "median_known_usd": 0.657705075,
+            "total_known_usd": 2.73154845,
+            "user_messages": 35,
+            "correction_messages": 12,
+            "correction_rate": 0.34285714285714286,
+            "corrected_sessions": 3,
+            "tool_results_known": 67,
+            "tool_failures": 16,
+            "tool_failure_rate": 0.23880597014925373,
+            "unknown_outcome_results": 0,
+            "session_ids": [
+              "0d3e6c7c-e368-47fb-b26b-dd647ac29d84",
+              "13c00ba6-7327-4395-92ce-79c99c01eec2",
+              "83faac57-2f56-4652-866d-e486522c4f8d",
+              "d1895bdb-dab3-4094-8525-cab6f86b1ff3"
+            ]
+          }
+        ]
+      },
+      {
+        "category": "refactor",
+        "comparable": true,
+        "supported": false,
+        "reason": "fewer than three sessions for at least one model",
+        "cells": [
+          {
+            "model": "claude-sonnet-4-5",
+            "category": "refactor",
+            "sessions": 2,
+            "mixed_model_sessions": 0,
+            "long_context_sessions": 1,
+            "complete_cost_sessions": 0,
+            "mean_known_usd": 0.71487525,
+            "median_known_usd": 0.71487525,
+            "total_known_usd": 1.4297505,
+            "user_messages": 16,
+            "correction_messages": 0,
+            "correction_rate": 0,
+            "corrected_sessions": 0,
+            "tool_results_known": 40,
+            "tool_failures": 3,
+            "tool_failure_rate": 0.075,
+            "unknown_outcome_results": 0,
+            "session_ids": [
+              "097c85cb-8e50-484f-824c-504865eb1fa1",
+              "e23c779b-867b-4ced-9727-754ff3f39103"
+            ]
+          },
+          {
+            "model": "claude-sonnet-5",
+            "category": "refactor",
+            "sessions": 1,
+            "mixed_model_sessions": 0,
+            "long_context_sessions": 0,
+            "complete_cost_sessions": 1,
+            "mean_known_usd": 0.1690012,
+            "median_known_usd": 0.1690012,
+            "total_known_usd": 0.1690012,
+            "user_messages": 2,
+            "correction_messages": 0,
+            "correction_rate": 0,
+            "corrected_sessions": 0,
+            "tool_results_known": 5,
+            "tool_failures": 2,
+            "tool_failure_rate": 0.4,
+            "unknown_outcome_results": 0,
+            "session_ids": [
+              "d5fa2206-1b03-4ed2-b213-33fe41167197"
+            ]
+          }
+        ]
+      },
+      {
+        "category": "test",
+        "comparable": true,
+        "supported": false,
+        "reason": "fewer than three sessions for at least one model",
+        "cells": [
+          {
+            "model": "claude-opus-4-1",
+            "category": "test",
+            "sessions": 2,
+            "mixed_model_sessions": 0,
+            "long_context_sessions": 0,
+            "complete_cost_sessions": 2,
+            "mean_known_usd": 2.915761875,
+            "median_known_usd": 2.915761875,
+            "total_known_usd": 5.83152375,
+            "user_messages": 15,
+            "correction_messages": 0,
+            "correction_rate": 0,
+            "corrected_sessions": 0,
+            "tool_results_known": 30,
+            "tool_failures": 2,
+            "tool_failure_rate": 0.06666666666666667,
+            "unknown_outcome_results": 0,
+            "session_ids": [
+              "ced1a459-1bb6-4e35-8908-9b41d4deb198",
+              "faad242a-1a49-4e33-b078-05b4c184c7ab"
+            ]
+          },
+          {
+            "model": "claude-sonnet-4-5",
+            "category": "test",
+            "sessions": 2,
+            "mixed_model_sessions": 0,
+            "long_context_sessions": 0,
+            "complete_cost_sessions": 2,
+            "mean_known_usd": 0.628854375,
+            "median_known_usd": 0.628854375,
+            "total_known_usd": 1.25770875,
+            "user_messages": 11,
+            "correction_messages": 0,
+            "correction_rate": 0,
+            "corrected_sessions": 0,
+            "tool_results_known": 35,
+            "tool_failures": 4,
+            "tool_failure_rate": 0.11428571428571428,
+            "unknown_outcome_results": 0,
+            "session_ids": [
+              "3ad56625-780c-49b0-9e93-eca31a55b4f5",
+              "ca797bb9-9719-4a2b-ab73-456557d501d5"
+            ]
+          },
+          {
+            "model": "claude-sonnet-5",
+            "category": "test",
+            "sessions": 1,
+            "mixed_model_sessions": 0,
+            "long_context_sessions": 0,
+            "complete_cost_sessions": 1,
+            "mean_known_usd": 0.231612,
+            "median_known_usd": 0.231612,
+            "total_known_usd": 0.231612,
+            "user_messages": 6,
+            "correction_messages": 0,
+            "correction_rate": 0,
+            "corrected_sessions": 0,
+            "tool_results_known": 6,
+            "tool_failures": 0,
+            "tool_failure_rate": 0,
+            "unknown_outcome_results": 0,
+            "session_ids": [
+              "2be89086-273c-49e2-bdde-d3803eb95b36"
+            ]
+          }
+        ]
+      },
+      {
+        "category": "review",
+        "comparable": true,
+        "supported": false,
+        "reason": "fewer than three sessions for at least one model",
+        "cells": [
+          {
+            "model": "claude-opus-4-1",
+            "category": "review",
+            "sessions": 3,
+            "mixed_model_sessions": 0,
+            "long_context_sessions": 0,
+            "complete_cost_sessions": 1,
+            "mean_known_usd": 1.8695005,
+            "median_known_usd": 1.54485,
+            "total_known_usd": 5.6085015,
+            "user_messages": 17,
+            "correction_messages": 6,
+            "correction_rate": 0.35294117647058826,
+            "corrected_sessions": 2,
+            "tool_results_known": 37,
+            "tool_failures": 7,
+            "tool_failure_rate": 0.1891891891891892,
+            "unknown_outcome_results": 0,
+            "session_ids": [
+              "9073096a-e478-40da-a27a-79109f97d132",
+              "b7dab20e-479d-4d1b-b6e4-8ac4e6451e08",
+              "f91bef70-05d9-49c7-b0cf-b9d0ce9eedb0"
+            ]
+          },
+          {
+            "model": "claude-sonnet-4-5",
+            "category": "review",
+            "sessions": 2,
+            "mixed_model_sessions": 0,
+            "long_context_sessions": 0,
+            "complete_cost_sessions": 1,
+            "mean_known_usd": 0.43461825,
+            "median_known_usd": 0.43461825,
+            "total_known_usd": 0.8692365,
+            "user_messages": 8,
+            "correction_messages": 0,
+            "correction_rate": 0,
+            "corrected_sessions": 0,
+            "tool_results_known": 21,
+            "tool_failures": 1,
+            "tool_failure_rate": 0.047619047619047616,
+            "unknown_outcome_results": 0,
+            "session_ids": [
+              "50a315a7-2373-4e2b-91cb-4be495c7cb70",
+              "d0bd888f-1575-4e97-a316-2ff225ef23f5"
+            ]
+          },
+          {
+            "model": "claude-sonnet-5",
+            "category": "review",
+            "sessions": 1,
+            "mixed_model_sessions": 0,
+            "long_context_sessions": 0,
+            "complete_cost_sessions": 1,
+            "mean_known_usd": 0.3255911,
+            "median_known_usd": 0.3255911,
+            "total_known_usd": 0.3255911,
+            "user_messages": 7,
+            "correction_messages": 4,
+            "correction_rate": 0.5714285714285714,
+            "corrected_sessions": 1,
+            "tool_results_known": 13,
+            "tool_failures": 4,
+            "tool_failure_rate": 0.3076923076923077,
+            "unknown_outcome_results": 0,
+            "session_ids": [
+              "29392198-093b-4f4e-9b64-e47465e234b1"
+            ]
+          }
+        ]
+      },
+      {
+        "category": "research",
+        "comparable": true,
+        "supported": false,
+        "reason": "fewer than three sessions for at least one model",
+        "cells": [
+          {
+            "model": "claude-opus-4-1",
+            "category": "research",
+            "sessions": 2,
+            "mixed_model_sessions": 0,
+            "long_context_sessions": 0,
+            "complete_cost_sessions": 1,
+            "mean_known_usd": 2.396450625,
+            "median_known_usd": 2.396450625,
+            "total_known_usd": 4.79290125,
+            "user_messages": 13,
+            "correction_messages": 0,
+            "correction_rate": 0,
+            "corrected_sessions": 0,
+            "tool_results_known": 24,
+            "tool_failures": 4,
+            "tool_failure_rate": 0.16666666666666666,
+            "unknown_outcome_results": 0,
+            "session_ids": [
+              "a207d841-9870-44cd-8afa-0f1ad5d6f1e4",
+              "b722a3ee-e6f2-4b83-9da3-a569a8d7499c"
+            ]
+          },
+          {
+            "model": "claude-sonnet-4-5",
+            "category": "research",
+            "sessions": 1,
+            "mixed_model_sessions": 0,
+            "long_context_sessions": 1,
+            "complete_cost_sessions": 0,
+            "mean_known_usd": 0.2452329,
+            "median_known_usd": 0.2452329,
+            "total_known_usd": 0.2452329,
+            "user_messages": 3,
+            "correction_messages": 0,
+            "correction_rate": 0,
+            "corrected_sessions": 0,
+            "tool_results_known": 7,
+            "tool_failures": 0,
+            "tool_failure_rate": 0,
+            "unknown_outcome_results": 0,
+            "session_ids": [
+              "3078317f-3651-4cd1-a636-179fb0258f6c"
+            ]
+          },
+          {
+            "model": "claude-sonnet-5",
+            "category": "research",
+            "sessions": 1,
+            "mixed_model_sessions": 0,
+            "long_context_sessions": 0,
+            "complete_cost_sessions": 1,
+            "mean_known_usd": 0.1662908,
+            "median_known_usd": 0.1662908,
+            "total_known_usd": 0.1662908,
+            "user_messages": 2,
+            "correction_messages": 0,
+            "correction_rate": 0,
+            "corrected_sessions": 0,
+            "tool_results_known": 7,
+            "tool_failures": 1,
+            "tool_failure_rate": 0.14285714285714285,
+            "unknown_outcome_results": 0,
+            "session_ids": [
+              "f1c7ea43-c0bd-4f73-9a22-c1f69f1e57a5"
+            ]
+          }
+        ]
+      },
+      {
+        "category": "plan",
+        "comparable": false,
+        "supported": false,
+        "reason": "only one model has a session in this category",
+        "cells": [
+          {
+            "model": "claude-sonnet-4-5",
+            "category": "plan",
+            "sessions": 3,
+            "mixed_model_sessions": 2,
+            "long_context_sessions": 0,
+            "complete_cost_sessions": 2,
+            "mean_known_usd": 0.297116133,
+            "median_known_usd": 0.2759697,
+            "total_known_usd": 0.8913484,
+            "user_messages": 11,
+            "correction_messages": 0,
+            "correction_rate": 0,
+            "corrected_sessions": 0,
+            "tool_results_known": 28,
+            "tool_failures": 1,
+            "tool_failure_rate": 0.03571428571428571,
+            "unknown_outcome_results": 0,
+            "session_ids": [
+              "4d0b0354-b552-4d15-83e1-c5907d7f4a04",
+              "aa0ca19a-e342-47d3-8bf8-66a70d629a90",
+              "db863291-aa9c-4f5b-ac06-6ca050474b8c"
+            ]
+          }
+        ]
+      },
+      {
+        "category": "ops",
+        "comparable": false,
+        "supported": false,
+        "reason": "only one model has a session in this category",
+        "cells": [
+          {
+            "model": "claude-sonnet-4-5",
+            "category": "ops",
+            "sessions": 3,
+            "mixed_model_sessions": 0,
+            "long_context_sessions": 2,
+            "complete_cost_sessions": 1,
+            "mean_known_usd": 0.30649575,
+            "median_known_usd": 0.28421895,
+            "total_known_usd": 0.91948725,
+            "user_messages": 11,
+            "correction_messages": 1,
+            "correction_rate": 0.09090909090909091,
+            "corrected_sessions": 1,
+            "tool_results_known": 28,
+            "tool_failures": 5,
+            "tool_failure_rate": 0.17857142857142858,
+            "unknown_outcome_results": 0,
+            "session_ids": [
+              "8cb1cc5e-8b33-439d-9f86-8ae4fac8da51",
+              "a52951be-2f0c-4a2d-932e-5d9250e57318",
+              "cb1e3b91-7d6d-4f51-a92a-37c448caff53"
+            ]
+          }
+        ]
+      }
+    ],
+    "model_totals": [
+      {
+        "model": "claude-opus-4-1",
+        "category": "all",
+        "sessions": 12,
+        "mixed_model_sessions": 0,
+        "long_context_sessions": 0,
+        "complete_cost_sessions": 5,
+        "mean_known_usd": 2.38645025,
+        "median_known_usd": 2.5159845,
+        "total_known_usd": 28.637403,
+        "user_messages": 77,
+        "correction_messages": 10,
+        "correction_rate": 0.12987012987012986,
+        "corrected_sessions": 3,
+        "tool_results_known": 153,
+        "tool_failures": 22,
+        "tool_failure_rate": 0.1437908496732026,
+        "unknown_outcome_results": 0,
+        "session_ids": [
+          "3888cf6f-f20f-4113-9752-143c54690953",
+          "6061f190-d64b-41d4-8d7b-de81a3d6b6ee",
+          "9073096a-e478-40da-a27a-79109f97d132",
+          "9161e14f-693a-44c3-8709-482903b4cd2a",
+          "a207d841-9870-44cd-8afa-0f1ad5d6f1e4",
+          "a8989c8d-d9b5-4060-83e4-470af72a16e3",
+          "b6e5b315-c446-41de-8e5b-07f85039b0e0",
+          "b722a3ee-e6f2-4b83-9da3-a569a8d7499c",
+          "b7dab20e-479d-4d1b-b6e4-8ac4e6451e08",
+          "ced1a459-1bb6-4e35-8908-9b41d4deb198",
+          "f91bef70-05d9-49c7-b0cf-b9d0ce9eedb0",
+          "faad242a-1a49-4e33-b078-05b4c184c7ab"
+        ]
+      },
+      {
+        "model": "claude-sonnet-4-5",
+        "category": "all",
+        "sessions": 18,
+        "mixed_model_sessions": 2,
+        "long_context_sessions": 4,
+        "complete_cost_sessions": 8,
+        "mean_known_usd": 0.471316231,
+        "median_known_usd": 0.34865065,
+        "total_known_usd": 8.48369215,
+        "user_messages": 97,
+        "correction_messages": 13,
+        "correction_rate": 0.13402061855670103,
+        "corrected_sessions": 4,
+        "tool_results_known": 230,
+        "tool_failures": 30,
+        "tool_failure_rate": 0.13043478260869565,
+        "unknown_outcome_results": 0,
+        "session_ids": [
+          "097c85cb-8e50-484f-824c-504865eb1fa1",
+          "0d3e6c7c-e368-47fb-b26b-dd647ac29d84",
+          "13c00ba6-7327-4395-92ce-79c99c01eec2",
+          "3078317f-3651-4cd1-a636-179fb0258f6c",
+          "3ad56625-780c-49b0-9e93-eca31a55b4f5",
+          "46005915-6314-4bc3-9f01-e1d44787f85f",
+          "4d0b0354-b552-4d15-83e1-c5907d7f4a04",
+          "50a315a7-2373-4e2b-91cb-4be495c7cb70",
+          "83faac57-2f56-4652-866d-e486522c4f8d",
+          "8cb1cc5e-8b33-439d-9f86-8ae4fac8da51",
+          "a52951be-2f0c-4a2d-932e-5d9250e57318",
+          "aa0ca19a-e342-47d3-8bf8-66a70d629a90",
+          "ca797bb9-9719-4a2b-ab73-456557d501d5",
+          "cb1e3b91-7d6d-4f51-a92a-37c448caff53",
+          "d0bd888f-1575-4e97-a316-2ff225ef23f5",
+          "d1895bdb-dab3-4094-8525-cab6f86b1ff3",
+          "db863291-aa9c-4f5b-ac06-6ca050474b8c",
+          "e23c779b-867b-4ced-9727-754ff3f39103"
+        ]
+      },
+      {
+        "model": "claude-sonnet-5",
+        "category": "all",
+        "sessions": 4,
+        "mixed_model_sessions": 0,
+        "long_context_sessions": 0,
+        "complete_cost_sessions": 4,
+        "mean_known_usd": 0.223123775,
+        "median_known_usd": 0.2003066,
+        "total_known_usd": 0.8924951,
+        "user_messages": 17,
+        "correction_messages": 4,
+        "correction_rate": 0.23529411764705882,
+        "corrected_sessions": 1,
+        "tool_results_known": 31,
+        "tool_failures": 7,
+        "tool_failure_rate": 0.22580645161290322,
+        "unknown_outcome_results": 0,
+        "session_ids": [
+          "29392198-093b-4f4e-9b64-e47465e234b1",
+          "2be89086-273c-49e2-bdde-d3803eb95b36",
+          "d5fa2206-1b03-4ed2-b213-33fe41167197",
+          "f1c7ea43-c0bd-4f73-9a22-c1f69f1e57a5"
+        ]
+      }
+    ],
     "excluded_sessions": [],
     "advice": {
-      "expensive_model": null,
-      "comparator_model": null,
-      "shared_categories": [],
-      "cost_ratio": null,
-      "verdict": "no_comparison_possible",
-      "statement": "Model-choice analysis is not computed in this build.",
-      "caveats": []
+      "expensive_model": "claude-opus-4-1",
+      "comparator_model": "claude-sonnet-4-5",
+      "shared_categories": [
+        "debug",
+        "implement",
+        "test",
+        "review",
+        "research"
+      ],
+      "cost_ratio": 5.063373788202937,
+      "verdict": "insufficient_evidence",
+      "statement": "claude-opus-4-1 has the highest mean known cost per session, USD 2.386 over 12 sessions, against USD 0.471 over 18 sessions for claude-sonnet-4-5, a ratio of 5.1x. They share 5 comparable categories (debug, implement, test, review, research), of which 0 have at least three sessions per model. No shared category is supported, so no correction rates are pooled. With fewer than 10 pooled sessions for at least one model, the logs cannot show whether the premium buys fewer corrections.",
+      "caveats": [
+        "17 sessions have incomplete cost; their known cost is a lower bound.",
+        "4 sessions include [1m] requests, priced at base rates and folded into their model family.",
+        "2 sessions use more than one model; each is attributed whole to its dominant model.",
+        "Correction messages are found by keyword rules and can miss or misread corrections.",
+        "The comparison is descriptive and makes no causal claim."
+      ]
     },
     "definitions": {
       "dominant_model": "Canonical model family (date suffix and [1m] stripped) with the most assistant records after dedupe; ties broken by known USD, then name. The whole session is attributed to it.",

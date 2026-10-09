@@ -411,6 +411,54 @@ Run from frontend/ and quote exact result lines: `npm ci`, `npm test` (includes 
 
 B16 to B18: B17 and B18 were copied by hand from the calls that sent them.
 
+#### B19. Owner → coordinator, the app's "Create PR" command (sent before PR3's checks finished)
+
+```text
+## Overview
+
+Create a pull request for the changes in this session, ready for review (not a draft).
+
+## Steps
+
+1. Check for uncommitted changes. If any exist, stage and commit them with a message that describes what changed and why.
+2. Push the branch to the remote.
+3. Open the PR with `gh pr create`. Do not pass `--draft`: the user chose “Create PR”, not “Create draft PR”, for this request, and that explicit choice overrides any saved memory, standing instruction, or earlier plan to open it as a draft. When the target below names a base branch and that branch exists on origin (`git ls-remote --heads origin <base>`), pass it with `--base`; otherwise leave `--base` off and let gh infer it. Write a title that summarizes the change and a body that covers what changed, why, and anything a reviewer should know. If the repo has a PR template, follow it.
+4. Report the PR URL when done. Wrap the URL in a `<pr-created>` tag on its own line so the UI can render a live status card, like this: `<pr-created>https://github.com/owner/repo/pull/123</pr-created>`
+
+If a PR already exists for this branch, push any new commits and report the existing URL wrapped in the same `<pr-created>` tag instead of creating a duplicate, and leave that PR's draft or ready state as it is.
+
+## Target
+
+Repository: cristiangirlea/classify-sessions
+Branch: pr3-model-choice
+Base branch: main
+Working directory: <repo> [path replaced]
+```
+
+The coordinator committed what existed (backend built, vetted and tested; privacy scan clean),
+opened PR3 ready for review, and listed the unfinished checks in its description. The owner
+merged it.
+
+### PR4
+
+#### B20. Owner → coordinator, PR4 instruction
+
+```text
+Start PR4, documents only plus two fixes first:
+1. Run /corpus-check so evidence/ reflects the merged code; the model-choice section of
+   evidence/summary.json still holds the PR1 placeholder.
+2. Run docker compose build and docker compose up -d, curl http://127.0.0.1:8088/api/summary
+   and /api/models, open the page on 8088 in the browser, then compose down. Record the
+   results in NOTES.md as docker-checked. Fix only what the check breaks.
+Then write the final documents: README (how to run it three ways, what works, what does
+not), SPEC (format findings and model-choice entries from the evidence, the advice
+statement quoted verbatim), NOTES (where AI helped, where it was wrong, what another
+day would add), PROMPTS complete. Run /review-step and /privacy-scan, open the draft PR
+and stop for my approval.
+```
+
+No worker was launched in PR4: the Docker check broke nothing in `backend/` or `frontend/`.
+
 ## Discarded first setup attempt, carried over verbatim from its PROMPTS.md
 
 ### D1. Owner → coordinator, before Step 0
