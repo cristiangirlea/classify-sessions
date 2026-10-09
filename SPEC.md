@@ -110,6 +110,49 @@ Each entry is a decision the brief leaves open, why it was taken, and what enfor
    3/15, which accounts for USD 0.4462 of the difference. The rates in the dated price table
    were not checked against the live pricing page from this repository (web access is denied
    by the settings). Enforced by `TestOTelCrossCheck` and `TestPriceTableComponentsAndAliases`.
+7. **A session's purpose is the first rule that matches its first genuine prompt (rules-v1).**
+   The prompt is lowercased and tried against 24 ordered regular-expression rules; the first
+   match gives the category and a rule id, and no match gives `unknown` with no rule. The
+   categories, as defined for this repository: *debug*, something is broken or behaves
+   unexpectedly; *implement*, build new functionality; *refactor*, restructure code without
+   changing behaviour; *test*, write, extend or repair tests; *review*, assess code or a change
+   for problems or readiness; *research*, understand how something works or compare options with
+   no change asked for; *plan*, design work before doing it; *ops*, build, deploy, CI,
+   infrastructure, dependencies or release. Where a prompt fits two, the order decides: plan
+   rules come first (so plan beats implement), then review ("look for anything that would
+   break", "ready to ship"); "why does …" and pasted error text are debug; "how does X work or handle …" is
+   research; CI work is ops even when it names tests; a test noun with a verb is test, but a
+   path under a test directory is not; fix verbs and symptom words are debug; implement is
+   last. Why: a rule list is deterministic, explains every decision by its rule id, and needs no
+   network or model. The rules were written from the 24 sessions outside the held-out set only.
+   Enforced by `TestClassifyRulesTableDriven` (every rule and every precedence case, on invented
+   prompts).
+8. **The held-out evaluation ran once, after the rules were frozen, and agrees 10 of 10.** The
+   labels file is read only when a command is given `--labels` explicitly; the rules were tuned
+   without it (`prompts --exclude-labels`) and their file's SHA-256 was recorded before the one
+   evaluation run (NOTES.md). Result: 10 labelled, 10 agreements, no disagreement
+   (`evidence/evaluation.json`). What it does not show: the labels were proposed by a Claude
+   model and the rules written by one, the prompts are synthetic templates, and ten sessions
+   cannot reveal where the rules fail. Where the rules are weakest, from the dev set: prompts
+   that sit between two categories (CI work that runs tests, a feature placed in a test file, a
+   regression test for a fixed bug, a readiness check on a test file); every one is decided by
+   rule order, not by understanding. `unknown` is never reached on this corpus, so real prompts
+   in other wording would likely fall to `unknown` or to the first keyword they happen to
+   contain. Enforced by `TestEvaluateLoadsLabelsAndReportsDisagreements`.
+9. **The API answers only loopback requests for its own origin.** It listens on 127.0.0.1
+   unless `--bind-any` is given; the `Host` header must be a loopback name, an `Origin` header
+   must equal the request's own origin, and `Sec-Fetch-Site: cross-site` is refused, each with
+   403. Only GET and HEAD are served (405 with `Allow: GET, HEAD` otherwise), unknown paths are
+   404, every error body follows `contract/error.schema.json`, and every response carries
+   `Cache-Control: no-store`, `nosniff`, `no-referrer`, `default-src 'none'` and a same-origin
+   resource policy. Why: the summary describes the developer's own work, so another website
+   open in the same browser must not be able to read it, and a DNS-rebinding name must not pass
+   as local. Enforced by `TestHTTPBoundary`.
+10. **The dev page's proxy target can move, but only to another loopback port.**
+    `API_PROXY_TARGET` overrides the default `http://127.0.0.1:8080`; any value other than
+    `http://127.0.0.1:<port>` or `http://localhost:<port>` stops the dev server at startup. Why:
+    port 8080 may be taken on a developer's machine, and nothing may leave the machine. Enforced
+    by `test/proxyTarget.test.ts`.
 
 ## Out of scope
 

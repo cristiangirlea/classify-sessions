@@ -240,6 +240,112 @@ B5, B6 and B7 were copied by hand from the calls that sent them. A command compa
 received was attempted and was not possible: the local worker transcript files were empty when
 checked.
 
+### PR2
+
+#### B9. Owner → coordinator, PR1 approval
+
+```text
+approved
+```
+
+The coordinator marked PR1 ready and squash-merged it. Its next command (fetch, list remote
+branches, create the PR2 branch from `origin/main`) was denied by the auto-mode permission
+check; the coordinator stopped and asked the owner.
+
+#### B10. Owner → coordinator
+
+```text
+Done: you are on pr2-classifier-http at origin/main 6b948e2, tree clean. Effort for this
+session: claude-opus-5-5 at medium, chosen because PR1 onward is coordination and
+verification. Start PR2 now as you described: both workers in parallel, held-out labels
+frozen, evaluation run once at the end and recorded verbatim.
+```
+
+#### B11. Coordinator → go-worker, PR2 (a fresh worker, not the PR1 one)
+
+```text
+PR2 (classifier, evaluation, HTTP), go-worker task list. Branch pr2-classifier-http is checked out; PR1's data path is merged. You edit backend/ only and never run git or gh. Read CLAUDE.md, AGENTS.md, .claude/agents/go-worker.md, .handoff/plan.md (sections "Backend design", "API contract"), contract/*.schema.json, contract/examples/*.json, NOTES.md section "PR1 worker reports and coordinator verification", and the existing backend/ code before writing code.
+
+Start your report with the exact model id you are running as.
+
+HELD-OUT LABELS ARE FROZEN. This is the most important rule of this step:
+- fixtures/labels/heldout.json holds ten held-out labels. Never open it, and never open files that quote its labels: .handoff/KICKOFF.md, PROMPTS.md, .handoff/pr0-draft/. Do not read the corpus files of individual sessions to inspect prompts.
+- Write and tune classifier rules on the other 24 sessions only, from the output of `go run ./cmd/sessions prompts --input ../fixtures/claude-code --exclude-labels ../fixtures/labels/heldout.json`. That is the only command you may give the real labels file to.
+- Never run `evaluate` against the real labels file, and never pass the real labels file to `summary` or `serve`. The coordinator runs the held-out evaluation once, after your rules are final, and records it verbatim. Your tests use temporary labels files written by the test.
+- In your report, say whether at any point you saw a held-out label or a held-out session's prompt.
+
+Build, standard library only, gofmt clean:
+
+1. internal/classify, rules-v1: an ordered list of (id, category, regexp) applied to the lowercased first prompt; first match wins; no match = unknown with rule null. Rule ids look like `debug.why-does`. Explicit precedence: plan beats implement; test nouns beat generic "add"; symptom questions are debug; "how does X work" is research; "review / look at … for anything that would break / good enough to ship" is review. Taxonomy (coordinator's one-line definitions; use them, and say where the 24 dev prompts made them hard to apply):
+   - debug: something is broken or behaves unexpectedly; find or fix the cause.
+   - implement: build new functionality or add a feature.
+   - refactor: restructure existing code without changing its behaviour.
+   - test: write, extend or repair tests or coverage.
+   - review: assess existing code or a change for problems or readiness.
+   - research: understand how something works or compare options, with no change asked for.
+   - plan: design or plan work before doing it.
+   - ops: build, deploy, CI, infrastructure, dependencies, environment or release work.
+   - unknown: none of the above.
+   Output is a category and a rule id only, never prompt text. Wire it into internal/summary: session_list category and rule, categories[], sessions.classified/unclassified and both unclassified fractions; classifier.method "rules-v1".
+2. internal/evaluate: load a labels file (top-level `labels`: array of {session_id, category}; validate: categories in the taxonomy, no duplicate ids, every id present in the input), compare with predictions, return the contract's heldout object (labelled, agreements, agreement_fraction, disagreements with the predicted rule id; agreement_fraction null when labelled is 0).
+3. cmd/sessions: `evaluate --input DIR --labels FILE` prints the heldout object as JSON; `summary --input DIR [--labels FILE]` and `serve --input DIR [--labels FILE] [--listen 127.0.0.1:8080] [--bind-any]` fill classifier.heldout from the labels file when given, else labelled 0, agreement_fraction null, disagreements [].
+4. internal/httpapi: GET and HEAD only; other methods 405 with `Allow: GET, HEAD` and the error JSON; unknown paths 404 JSON; every error body matches contract/error.schema.json. Routes: /api/summary (marshalled once at startup). /api/models is PR3: 404 for now. Listen on loopback unless --bind-any; Host header must be loopback (127.0.0.1, localhost or [::1], any port) or 403; Origin, if present, must equal scheme://Host or 403; Sec-Fetch-Site: cross-site → 403. Headers on every response: Cache-Control no-store, X-Content-Type-Options nosniff, Referrer-Policy no-referrer, Content-Security-Policy default-src 'none', Cross-Origin-Resource-Policy same-origin.
+
+Tests to add, each passing: TestClassifyRulesTableDriven (invented prompts you write yourself, never copied or paraphrased from the corpus: the privacy scan fails on any corpus first-prompt text; cover each category, each precedence rule and the unknown case); TestEvaluateLoadsLabelsAndReportsDisagreements (temporary labels file over fixtures/synthetic/ or the corpus dev sessions; validation errors too); TestHTTPBoundary (httptest: 200 on GET and HEAD /api/summary, 404 JSON, 405 JSON with Allow, 403 for non-loopback Host, foreign Origin and cross-site Sec-Fetch-Site, the five headers, and no prompt text in the body). Tighten TestLiveSummaryMatchesContract: remove `.classifier.heldout.disagreements[]` from emptyArrayPaths by giving the live summary a temporary labels file that labels one dev session with a category its rule does not predict. All PR1 tests must keep passing; core numbers (1107 = 1084 + 1 + 0 + 22, USD 38.01359025) must not change.
+
+Report a dev-set table for the 24 sessions: session id prefix (8 characters), predicted category, rule id, and your own one-word reading of the intended category where it differs. No prompt text in the report, the code comments, test names or messages.
+
+Run from backend/ and quote exact result lines: `gofmt -l .`, `go vet ./...`, `go test ./... -count=1`, `go run ./cmd/sessions summary --input ../fixtures/claude-code` (quote only records, spend.total_usd, sessions, categories with sessions per category, classifier.method). Do not run `evaluate` or `serve` against the corpus with the real labels file.
+
+Report: model id; the held-out statement above; files touched; each command with its exact result line; each named test and pass/fail; the dev-set table; what you did not do; contract questions.
+```
+
+#### B12. Coordinator → react-worker, PR2 (launched in the same message as B11)
+
+```text
+PR2 (classifier, evaluation, HTTP), react-worker task list. Branch pr2-classifier-http is checked out; PR1's page is merged. You edit frontend/ only and never run git or gh. Read CLAUDE.md, AGENTS.md, .claude/agents/react-worker.md, .handoff/plan.md (section "Frontend design"), contract/, and the existing frontend/ code before writing code. Never open fixtures/. The backend is being built in parallel and is not up: work against `npm run dev:mock`; the coordinator checks the page against the live backend afterwards.
+
+Start your report with the exact model id you are running as.
+
+Build:
+
+1. Vite proxy: vite.config.ts already proxies /api to http://127.0.0.1:8080 with changeOrigin false when VITE_API_MOCK is not 1. Confirm it, change nothing unless it is wrong, and say which.
+2. Error state: when /api/summary fails (backend down, so the dev proxy answers with an error status; a 403, 404 or 405 with the contract's error JSON; a non-JSON body), the page shows one plain-text error line with the code, message and HTTP status where known, plus a short hint that the API must run on 127.0.0.1:8080 (`go run ./cmd/sessions serve --input ../fixtures/claude-code` from backend/). No retry loop. The loading state stays text.
+3. Add `npm run contract:check` to the test script so `npm test` fails when contract.gen.ts is stale.
+4. Horizontal scroll: at a narrow width the whole page scrolls sideways (the Sessions table is wide). Wrap wide tables in a container with overflow-x: auto so only the table scrolls, not the page.
+5. Tier-2 render test, only if it needs no new package: test/App.test.tsx (or a views test) rendering the views to static markup with react-dom/server (no jsdom) from contract/examples/summary.json, asserting the three headline numbers appear: records total, known spend with its lower-bound wording, and the held-out agreement. If it cannot be done without installing a package, skip it and say why.
+
+Keep every PR1 rule: types only from src/api/contract.gen.ts; no chart library, web font, icon set, CDN tag or external URL; all data as text; no dangerouslySetInnerHTML; do not install packages beyond the lock file. The contract is frozen: if it cannot express what the page needs, stop on that item and report it.
+
+Run from frontend/ and quote exact result lines: `npm ci`, `npm run contract:check`, `npm run typecheck`, `npm test`, `npm run build`. If you can, start `npm run dev` (not the mock) briefly with no backend running, fetch /api/summary with curl on 127.0.0.1:5173, quote the status and body, and stop the server; this shows what the error state receives.
+
+Report: model id; files touched; each command with its exact result line; each test and pass/fail; what you did not do; contract questions.
+```
+
+#### B13. Coordinator → react-worker, PR2 (same worker resumed; it had ended without a report, mid-edit)
+
+```text
+You stopped without delivering a report, and frontend/ is mid-edit. Finish the PR2 task list, frontend/ only, same rules as before: close every `<div className="table-scroll">` wrapper you opened in the views, add `.table-scroll { overflow-x: auto; }` to src/styles.css, add `npm run contract:check` to the test script, and write the tier-2 static-render test with react-dom/server if it needs no new package (otherwise skip it and say why). Then run from frontend/ and quote exact result lines: `npm ci`, `npm run contract:check`, `npm run typecheck`, `npm test`, `npm run build`; if you can, `npm run dev` with no backend and curl /api/summary on 127.0.0.1:5173 (status and body), then stop the server. Deliver the full report: model id; files touched; each command with its exact result line; each test and pass/fail; what you did not do; contract questions.
+```
+
+Before B13, the session was in plan mode for one turn; the coordinator's plan for the rest of PR2
+was approved by the owner (the plan file under the user's Claude folder could not be written:
+the project settings deny it, as intended).
+
+#### B14. Owner's answer to the coordinator's question (**paraphrase**: picked from options)
+
+- "Port 8080 is held by Docker … The live check needs 8080 free … How should I handle it?" →
+  "Use another port": run `serve` on 127.0.0.1:8081 and make the Vite proxy target overridable
+  by an environment variable, default 8080.
+
+#### B15. Coordinator → react-worker, PR2 (same worker resumed)
+
+```text
+One more PR2 item, frontend/ only, same rules (no git this time). Port 8080 on this machine is held by another program, so the owner chose to run the live check with the API on 127.0.0.1:8081. In vite.config.ts, make the /api proxy target overridable by the environment variable API_PROXY_TARGET (not VITE_-prefixed, so it never reaches the client bundle). Default stays http://127.0.0.1:8080. Accept only http://127.0.0.1:<port> or http://localhost:<port>; any other value must make the dev server fail at startup with a clear message (nothing may leave the machine). Keep changeOrigin false and the mock behaviour unchanged. Add a small test for the validation if it fits the existing Vitest setup without new packages (e.g. move the check into a tiny exported function). Run from frontend/ and quote exact result lines: `npm run typecheck`, `npm test`, `npm run build`; then start `API_PROXY_TARGET=http://example.com npm run dev` and quote the startup error, and stop it. Report: files touched; commands with result lines; tests; what you did not do.
+```
+
+B11 to B15 were copied by hand from the calls that sent them.
+
 ## Discarded first setup attempt, carried over verbatim from its PROMPTS.md
 
 ### D1. Owner → coordinator, before Step 0

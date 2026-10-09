@@ -21,22 +21,24 @@ const COMPONENT_LABELS: [keyof Components, string][] = [
 
 function ComponentsTable({ components }: { components: Components }) {
   return (
-    <table>
-      <thead>
-        <tr>
-          <th>Component</th>
-          <th className="num">Known USD</th>
-        </tr>
-      </thead>
-      <tbody>
-        {COMPONENT_LABELS.map(([key, label]) => (
-          <tr key={key}>
-            <td>{label}</td>
-            <td className="num">{formatUsd(components[key])}</td>
+    <div className="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th className="num">Known USD</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {COMPONENT_LABELS.map(([key, label]) => (
+            <tr key={key}>
+              <td>{label}</td>
+              <td className="num">{formatUsd(components[key])}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -65,31 +67,33 @@ export function Spend({ summary }: { summary: SummaryResponse }) {
       {categories.length === 0 ? (
         <p>No categories: no spend to show.</p>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Category</th>
-              <th className="num">Known USD</th>
-              <th>Share of largest</th>
-              <th className="num">Incomplete sessions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {categories.map((c) => {
-              const width = maxCost > 0 ? (c.cost_usd / maxCost) * 100 : 0;
-              return (
-                <tr key={c.category}>
-                  <td>{c.category}</td>
-                  <td className="num">{formatUsdKnown(c.cost_usd, c.cost_incomplete_sessions === 0)}</td>
-                  <td className="barcell">
-                    <div className="bar" style={{ width: `${width}%` }} />
-                  </td>
-                  <td className="num">{formatCount(c.cost_incomplete_sessions)}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th className="num">Known USD</th>
+                <th>Share of largest</th>
+                <th className="num">Incomplete sessions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {categories.map((c) => {
+                const width = maxCost > 0 ? (c.cost_usd / maxCost) * 100 : 0;
+                return (
+                  <tr key={c.category}>
+                    <td>{c.category}</td>
+                    <td className="num">{formatUsdKnown(c.cost_usd, c.cost_incomplete_sessions === 0)}</td>
+                    <td className="barcell">
+                      <div className="bar" style={{ width: `${width}%` }} />
+                    </td>
+                    <td className="num">{formatCount(c.cost_incomplete_sessions)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       <h3>Cost components</h3>
@@ -99,28 +103,30 @@ export function Spend({ summary }: { summary: SummaryResponse }) {
       {spend.by_model.length === 0 ? (
         <p>No model usage was found.</p>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Model</th>
-              <th>Price key</th>
-              <th className="num">Requests</th>
-              <th className="num">Known USD</th>
-              <th>Flags</th>
-            </tr>
-          </thead>
-          <tbody>
-            {spend.by_model.map((m) => (
-              <tr key={m.model}>
-                <td className="mono">{m.model}</td>
-                <td className="mono">{m.price_key ?? 'not in price table'}</td>
-                <td className="num">{formatCount(m.requests)}</td>
-                <td className="num">{formatUsd(m.cost_usd)}</td>
-                <td>{m.flags.length === 0 ? 'none' : m.flags.join(', ')}</td>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>Price key</th>
+                <th className="num">Requests</th>
+                <th className="num">Known USD</th>
+                <th>Flags</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {spend.by_model.map((m) => (
+                <tr key={m.model}>
+                  <td className="mono">{m.model}</td>
+                  <td className="mono">{m.price_key ?? 'not in price table'}</td>
+                  <td className="num">{formatCount(m.requests)}</td>
+                  <td className="num">{formatUsd(m.cost_usd)}</td>
+                  <td>{m.flags.length === 0 ? 'none' : m.flags.join(', ')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
       {usedFlags.length > 0 && (
         <>
