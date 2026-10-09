@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "permissions": {
+    "allow": [
+      "Read",
+      "Bash(go *)",
+      "Bash(gofmt *)",
+      "Bash(npm run *)",
+      "Bash(npm test *)",
+      "Bash(npm test)",
+      "Bash(npm ci)",
+      "Bash(npx vitest *)",
+      "Bash(npx tsc *)",
+      "Bash(npx json2ts *)",
+      "Bash(git status *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git diff)",
+      "Bash(git log *)",
+      "Bash(curl * http://127.0.0.1:*)",
+      "Bash(curl http://127.0.0.1:*)",
+      "Bash(sha256sum *)",
+      "Bash(date *)",
+      "Bash(node .claude/skills/privacy-scan/scan.mjs*)"
+    ],
+    "ask": [
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(gh pr create *)",
+      "Bash(gh pr ready *)",
+      "Bash(npm install *)",
+      "Bash(npm install)",
+      "Bash(go get *)",
+      "Bash(docker *)",
+      "Bash(curl *)",
+      "Edit(contract/**)",
+      "Edit(.claude/**)",
+      "Edit(CLAUDE.md)",
+      "Edit(AGENTS.md)",
+      "Edit(fixtures/labels/**)"
+    ],
+    "deny": [
+      "Read(~/.claude/**)",
+      "Read(~/.codex/**)",
+      "Read(~/.cursor/**)",
+      "Read(~/AppData/Roaming/Cursor/**)",
+      "Read(~/.hrn/**)",
+      "Read(.env*)",
+      "Read(**/.env*)",
+      "Edit(fixtures/claude-code/**)",
+      "Edit(fixtures/otel/**)",
+      "Edit(fixtures/claude-code.sha256)",
+      "Bash(rm -rf *)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(npm publish *)",
+      "Bash(docker push *)",
+      "WebFetch",
+      "WebSearch"
+    ],
+    "blockReadsOutsideWorkingDirectories": true
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-bash.mjs\""
+          }
+        ]
+      }
+    ]
+  }
+}

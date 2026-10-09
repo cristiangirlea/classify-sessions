@@ -1,2 +1,4 @@
 * text=auto eol=lf
 fixtures/** -text
+frontend/package-lock.json linguist-generated=true
+frontend/src/api/contract.gen.ts linguist-generated=true

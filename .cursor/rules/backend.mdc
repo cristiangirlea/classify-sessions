@@ -1,0 +1,12 @@
+---
+description: Go backend rules
+globs: backend/**
+alwaysApply: false
+---
+Cursor was not used to build this repository; these rules mirror `.claude/agents/go-worker.md`.
+
+- Go 1.27.2, standard library only, gofmt clean.
+- Accounting invariant: every nonblank line is exactly one of parsed, malformed, unknown, duplicate; `TestCorpusAccounting` enforces it.
+- Pricing: per deduped assistant event `in·I + out·O + cache_read·I·0.1 + cache_write·I·1.25` per million. Missing usage, unknown model, no cache fields and `[1m]` set `cost_complete=false` with a flag; unknown cost is never zero.
+- HTTP boundary: loopback listen unless `--bind-any`; `Host` loopback-only; `Origin` must equal `scheme://Host`; `Sec-Fetch-Site: cross-site` is 403; GET and HEAD only; JSON errors per `contract/error.schema.json`.
+- Structs in `internal/contract` mirror `contract/*.schema.json`; `TestExamplesDecodeStrictly` must pass.
