@@ -29,6 +29,39 @@ descriptive and makes no causal claim.
 
 Each entry is a fact about the session-log format, with the test that confirms it.
 
+1. **Every nonblank line is one JSON record, and the corpus has a few that are not clean.**
+   34 files hold 1107 nonblank lines: 1084 parse, 1 is malformed, none has an unknown type or
+   content block, and 22 repeat an earlier record with the same session and uuid and identical
+   content. Confirmed by `TestCorpusAccounting`; the duplicate and conflict rules by
+   `TestDuplicateVsConflictingUUID` on `fixtures/synthetic/`.
+2. **Summary records have no identity.** They carry no session id, uuid or timestamp (12 in the
+   corpus), so they belong to the session of the file they are in and sort last. Confirmed by
+   `TestSummaryRecordsAttachToFileSession` and the `missing_timestamp` count of 12 in
+   `TestCorpusAccounting`.
+3. **Usage comes in three shapes.** Most assistant records carry input, output, cache-read and
+   cache-write tokens; 59 carry only input and output; 10 carry no usage at all. Confirmed by
+   `TestCorpusAccounting` (diagnostics) and `TestUsageBilledOncePerRecord`.
+4. **File order is not time order.** In session `3888cf6f…` the first user record in the file is
+   not the earliest one, so the first prompt must be chosen by timestamp. Confirmed by
+   `TestFirstPromptUsesTimestampOrder`.
+5. **Tool use spans two records.** A call is a `tool_use` block in an assistant record; its
+   result is a `tool_result` block, with `is_error`, in the next user record. A user record that
+   carries a tool result is not a prompt. Confirmed by `TestToolResultsAreNotPrompts`.
+6. **User prompts are either a string or a list of text blocks.** Both forms are prompts.
+   Confirmed by `TestStringAndBlockContentArePrompts`.
+7. **Model ids are logged with a date suffix and sometimes a `[1m]` marker.** Five ids appear;
+   two sidechain Haiku records have no request id and are absent from the OTel export.
+   Confirmed by `TestOTelCrossCheck`.
+8. **No harness tags appear in the corpus.** Zero lines contain `<system-reminder>`,
+   `<command-` or `"isMeta"` (`evidence/tags.txt`). Stripping `<system-reminder>` from prompts is
+   defensive only, tested on a synthetic record by
+   `TestSystemReminderStrippedFromSyntheticPrompt`.
+9. **All 22 duplicates are one replayed block.** Session `b7dab20e…` repeats its first 22 lines
+   byte for byte at lines 45 to 66, so its timestamps jump back at line 45. Once the copies are
+   counted as duplicates, its remaining records are in time order and its first prompt is line
+   1 under either order. Confirmed by `TestCorpusAccounting` (all 22 duplicates in this session)
+   and `TestFirstPromptUsesTimestampOrder` (subtest for this session).
+
 ## Decisions on unsettled points
 
 Each entry is a decision the brief leaves open, why it was taken, and what enforces it.
@@ -53,6 +86,30 @@ Each entry is a decision the brief leaves open, why it was taken, and what enfor
    agreement figure measures agreement with an AI reading of the same first prompt, not with
    a human judgement. Checked by a command that recomputes the selection rule from the
    fixture file names (NOTES.md).
+3. **A repeated record is a duplicate only if its content is identical; otherwise it is
+   malformed.** Two records with the same session and uuid and the same canonical JSON (key
+   order ignored) count once as parsed and once as duplicate, and are billed once. Same uuid
+   with different content is a conflict and counts as malformed. Why: a byte-for-byte rule
+   would call a re-serialised copy a conflict, and silently keeping either version of a
+   conflict would pick one at random. Enforced by `TestDuplicateVsConflictingUUID` and
+   `TestUsageBilledOncePerRecord`.
+4. **Known cost is a lower bound, and a session says when it is one.** A session's cost is
+   incomplete when any of its requests has no usage, an unknown model, no cache fields or a
+   `[1m]` marker, or when a malformed or unknown record belongs to it. The known part is still
+   reported; unknown cost is never counted as zero. Sidechain requests are billed and flagged
+   but do not make a session incomplete. Why: the lead needs the known total and to see how much
+   of it is partial. Enforced by `TestUsageBilledOncePerRecord` and
+   `TestPriceTableComponentsAndAliases`; on the corpus, 17 of 34 sessions are incomplete.
+5. **`[1m]` requests are priced at base rates and flagged; the OTel generator priced them
+   higher.** The `[1m]` marker names a long-context mode whose surcharge applies only above a
+   context threshold; this repository prices them at the base rate and flags them. The OTel
+   export priced them at 6/22.50, which accounts for USD 1.5357 of the difference between the
+   two totals. Whether any request exceeds the threshold is not tested here. Enforced by
+   `TestOTelCrossCheck`.
+6. **Sonnet 5 is priced at 2/10 USD per million input/output tokens.** The OTel generator used
+   3/15, which accounts for USD 0.4462 of the difference. The rates in the dated price table
+   were not checked against the live pricing page from this repository (web access is denied
+   by the settings). Enforced by `TestOTelCrossCheck` and `TestPriceTableComponentsAndAliases`.
 
 ## Out of scope
 

@@ -113,6 +113,133 @@ continue on seasion b
   session in the project folder after the merge, checks `/agents`, and gives it the Session B
   instruction.
 
+## Session B (PR1 to PR4)
+
+### PR1
+
+#### B1. Owner → coordinator, session start
+
+```text
+Read .handoff/KICKOFF.md and follow the Session B instructions exactly.
+```
+
+`.handoff/` was not yet in the worktree. The coordinator's attempt to list `.handoff/` in the
+main checkout was rejected by the owner before it ran; nothing outside the worktree was read.
+
+#### B2. Owner → coordinator (sent twice, each after rejecting a tool call)
+
+```text
+.handoff/ is now in your worktree and your branch is fast-forwarded to main (7981e95).
+Do not read the main checkout. Re-read .handoff/KICKOFF.md from your worktree and
+follow the Session B instructions exactly, starting with /agents loaded here.
+```
+
+#### B3. Kickoff instructions, Session B section
+
+The Session B section of `.handoff/KICKOFF.md` read in this session is Appendix A's Session B
+section with the two revisions quoted after Appendix A. Checked by a line-by-line comparison
+script (scratch folder, not in the repository): the only differing lines are those two
+revisions.
+
+#### B4. Owner → coordinator, after rejecting a read of a corpus file
+
+```text
+Continue. You confirmed the checks; now branch pr1-data-path from main, launch go-worker
+and react-worker in parallel with their PR1 task lists from .handoff/plan.md, integrate,
+run both test suites, run /review-step and /privacy-scan, open the draft PR and stop for
+my approval. If a permission prompt appears, wait for me to allow it rather than ending
+the turn.
+```
+
+#### B5. Coordinator → go-worker, PR1
+
+```text
+PR1 (data path), go-worker task list. Branch pr1-data-path is checked out; you edit backend/ only and never run git or gh. Read CLAUDE.md, AGENTS.md, .claude/agents/go-worker.md, .handoff/plan.md (sections "Backend design", "Facts carried over and corrected", "API contract"), contract/*.schema.json, contract/examples/*.json, fixtures/README.md and fixtures/synthetic/README.md before writing code. Never open fixtures/labels/heldout.json.
+
+Start your report with the exact model id you are running as.
+
+Build, standard library only, Go 1.27.2, gofmt clean:
+
+1. internal/model: Session, Event, Usage as in the plan's "Backend design" (FirstPrompt is never serialised).
+2. internal/ingest: sorted walk of *.jsonl under --input; 8 MiB line cap; every nonblank line is exactly one of parsed, malformed, unknown, duplicate (invariant tested). Malformed = invalid JSON, bad field shapes, negative or non-integer tokens, unparsable timestamp, uuid conflict. Unknown = unknown `type` or unknown content block, whole record. Duplicate = same (sessionId, uuid) with identical canonical JSON. Summary records attach to the file's session as timeless events. Events sorted by timestamp, timeless last. First prompt = earliest dated user record with string content or text blocks, no tool_result block, non-empty after stripping <system-reminder>…</system-reminder> (defensive: the corpus has none). Tool outcome from is_error. Diagnostics: missing_usage, missing_timestamp, missing_cache_fields, sidechain.
+3. internal/pricing: dated table (source https://docs.claude.com/en/docs/about-claude/pricing, as_of 2026-10-09): Sonnet 4.5 3/15, Opus 4.1 15/75, Haiku 4.5 1/5, Sonnet 5 2/10 USD per million in/out; cache read 0.1x input, cache write 1.25x input (5-minute). Key = model minus -YYYYMMDD and [1m]; export CanonicalModel and the rate table (PR3's modelchoice package uses them). Per deduped assistant event: in·I + out·O + cache_read·I·0.1 + cache_write·I·1.25 per million. Session cost_complete=false on: missing usage, unknown model, no cache fields, [1m] marker (base rate, flagged), malformed or unknown records attributed to the session. Sidechain records billed and flagged. ModelSpend flags use only the contract enum.
+4. internal/summary: builds contract.SummaryResponse. PR1 has no classifier, so every session is category "unknown" with rule null.
+5. cmd/sessions: `summary --input DIR` (JSON on stdout), `prompts --input DIR --exclude-labels FILE` (session id and first prompt of each session NOT in the labels file, for PR2 rule tuning; stdout only, never written to a file), `crosscheck --input DIR --otel FILE` (text report). Keep `version`. --input is mandatory, no home-directory default.
+
+Contract answers from the coordinator (the contract stays frozen; use these, do not change contract/):
+- classifier: method "none", taxonomy as in the schema enum order, heldout {labelled 0, agreements 0, agreement_fraction null, disagreements []}.
+- model_choice (PR3 computes it): emit a schema-valid placeholder: models [], categories [], model_totals [], excluded_sessions [], advice {expensive_model null, comparator_model null, shared_categories [], cost_ratio null, verdict "no_comparison_possible", statement "Model-choice analysis is not computed in this build.", caveats []}, definitions = the seven strings from contract/examples/models.json verbatim, pricing_source and pricing_date equal to pricing.source_url and pricing.as_of.
+- source.input_hint: the --input value as given, with forward slashes; if it is absolute, only its last path element. Never an absolute path.
+- pricing.assumptions: the three strings in contract/examples/summary.json, plus one saying sidechain requests are billed and flagged.
+- example_request: "curl -s http://127.0.0.1:8080/api/summary".
+- TestLiveSummaryMatchesContract: strict-decode the live corpus summary into the contract structs (DisallowUnknownFields) and compare its recursive key set with contract/examples/summary.json. Where an array is empty on either side (model_choice placeholder arrays, heldout.disagreements), item keys cannot be compared: skip only those paths and list them by name in the test so PR2 and PR3 can tighten it.
+- labels file shape for --exclude-labels (keys only; do not open the file): top-level object with `labels`, an array of {session_id, category}; other top-level keys are description, provenance, selection_rule, taxonomy. Read only labels[].session_id. Test the exclusion with a temporary labels file written by the test, never the real one.
+
+Tests to add, each passing (names from PLAN.md): TestCorpusAccounting (34 files; 1107 = 1084 parsed + 1 malformed + 0 unknown + 22 duplicate; diagnostics missing_usage 10, missing_timestamp 12, missing_cache_fields 59, sidechain 2), TestMalformedLineCountedNotDropped, TestUnknownTypeAndUnknownBlockAreUnknown, TestDuplicateVsConflictingUUID, TestFirstPromptUsesTimestampOrder (synthetic session 4 and corpus session 3888cf6f…), TestStringAndBlockContentArePrompts, TestToolResultsAreNotPrompts, TestSystemReminderStrippedFromSyntheticPrompt, TestSummaryRecordsAttachToFileSession, TestUsageBilledOncePerRecord (corpus known USD 38.0136 ± 0.0001 with per-model components), TestPriceTableComponentsAndAliases, TestLiveSummaryMatchesContract, TestFixturesMatchManifest (fixtures/claude-code against fixtures/claude-code.sha256), TestOTelCrossCheck (oracle total 41.119147; 455 matched requests; Sonnet 5 priced 3/15 by the generator +0.4462; [1m] priced 6/22.50 +1.5357; 10 unmatched = missing usage; 2 Haiku sidechains absent from OTel −0.0190). Keep TestExamplesDecodeStrictly passing. The synthetic edge-case tests use fixtures/synthetic/ and its README's expected numbers.
+
+The corpus numbers above are planning facts, unverified in this repository. If your code measures something different after you have checked the parser, report the measured number and the reason; never shape code to hit a number. If fixtures/synthetic/ disagrees with the corpus record shape, or the contract cannot express something, stop on that item and report it.
+
+No prompt text, absolute paths or usernames in any output, golden file, test name or test assertion message (session ids and rule ids only). Assert synthetic prompts by comparing in code, not by printing them.
+
+Run from backend/ and quote the exact result lines: `gofmt -l .`, `go vet ./...`, `go test ./... -count=1`, `go run ./cmd/sessions summary --input ../fixtures/claude-code` (quote only records, spend.total_usd, spend.incomplete_sessions, sessions.total), `go run ./cmd/sessions crosscheck --input ../fixtures/claude-code --otel ../fixtures/otel/claude-code-events.jsonl` (headline lines). Do not run `prompts` against the corpus in PR1.
+
+Report: model id; files touched; each command with its exact result line; each named test and pass/fail; what you did not do; contract questions.
+```
+
+#### B6. Coordinator → react-worker, PR1 (launched in the same message as B5)
+
+```text
+PR1 (data path + page), react-worker task list. Branch pr1-data-path is checked out; you edit frontend/ only and never run git or gh. Read CLAUDE.md, AGENTS.md, .claude/agents/react-worker.md, .handoff/plan.md (section "Frontend design"), contract/*.schema.json, contract/examples/*.json and the existing frontend/ scaffold before writing code. Never open fixtures/. The backend is not up: build against `npm run dev:mock` only.
+
+Start your report with the exact model id you are running as.
+
+Build:
+
+1. src/api/client.ts: getSummary() and getModels() via fetch('/api/summary') and fetch('/api/models'); check the status; on non-2xx read the ErrorResponse body when it parses and surface code and message as text; parse to the generated types from src/api/contract.gen.ts only (never hand-edit it, never declare parallel types).
+2. src/lib/format.ts: USD (a known amount that is a lower bound when cost is incomplete must say so), fractions as percentages, integer counts, dates, and null rendered as "not measured" (never 0).
+3. Four views in src/views/, composed in App.tsx, with a header showing example_request:
+   - Purpose: categories with sessions and records; classifier method; held-out labelled, agreements, agreement fraction and the disagreements table (session id, labelled, predicted, rule).
+   - Spend: cost by category with CSS-width bars (no chart library), the four components, the by-model table with flags and a plain-text explanation of each flag, incomplete-session count with the lower-bound wording, pricing source URL as text, as_of date, multipliers and assumptions.
+   - Coverage: records table (total, parsed, malformed, unknown, duplicate), unparsed fraction, unclassified fractions (sessions and records), diagnostics.
+   - Sessions: session_list as a table (id, started, ended, records, category, rule, cost with completeness, requests, models, tool calls, tool errors).
+   The model-choice panel is PR3; do not build it now.
+   Loading, error and empty states are text. Render all data as text: no dangerouslySetInnerHTML, no chart library, web font, icon set, CDN tag or external URL at runtime. Minimal CSS is fine.
+4. Tier-1 Vitest (mandatory), in test/:
+   - format.test.ts: each formatter, including null → "not measured" and the lower-bound wording.
+   - contract.test.ts: each example in contract/examples/ parses through the client (stub fetch to return the example file's text); a non-2xx with error.json yields the error text; the summary example is internally consistent: records.total = parsed + malformed + unknown + duplicate; unparsed_fraction = (malformed + unknown) / total; sessions.classified + unclassified = total; category sessions sum to sessions.total; category cost_usd sum = spend.total_usd = by_model cost_usd sum = session_list cost_usd sum; each components object sums to its cost; spend.components = sum of category components (compare floats with a tolerance).
+   No jsdom render test in PR1 (tier 2 is PR2, only if cheap). Do not add contract:check to the test script yet (PR2). Do not install packages beyond the lock file; if something you need is missing, report it instead.
+
+The contract is frozen: if it cannot express what the page needs, stop on that item and report it.
+
+Run from frontend/ and quote the exact result lines: `npm ci`, `npm run contract:check`, `npm run typecheck`, `npm test`, `npm run build`. If you can, also start `npm run dev:mock` briefly and fetch /api/summary from it with curl on 127.0.0.1, then stop the server; say so if you could not.
+
+Report: model id; files touched; each command with its exact result line; each test and pass/fail; what you did not do; contract questions.
+```
+
+#### B7. Coordinator → go-worker, PR1 follow-up after `/review-step` (resumed the same worker)
+
+```text
+PR1 follow-up from the coordinator's review: add three assertions to existing tests, backend/ only, same rules as before (no git, never open fixtures/labels/heldout.json, no prompt text in messages).
+
+1. TestUsageBilledOncePerRecord: the plan's acceptance list says "corpus 38.0136 ± 0.0001 with per-model components". Also assert, per logged model, the four components (input_usd, output_usd, cache_read_usd, cache_write_usd) and that they sum to that model's USD. Use the measured values, and say in your report that they are measured by this code (the OTel cross-check confirms per-model totals, not components).
+2. TestCorpusAccounting: assert that all 22 duplicates belong to one session, and name it by id prefix (planning fact: b7dab20e…). If they do not, report what you measured instead of changing the assertion to fit.
+3. TestFirstPromptUsesTimestampOrder: the plan names two files out of timestamp order (3888cf6f… and b7dab20e…). Cover b7dab20e… too, or report why that file's disorder does not affect its first prompt and assert what is true instead.
+
+Run from backend/ and quote exact result lines: gofmt -l ., go vet ./..., go test ./... -count=1. Report: files touched, what each new assertion checks, the measured values you encoded, pass/fail.
+```
+
+#### B8. Owner → coordinator, after the follow-up
+
+```text
+Backend and frontend both pass. Run /corpus-check, /review-step and /privacy-scan now,
+then commit PR1, push, open the draft PR and stop for my approval. Do not wait for
+anything else.
+```
+
+B5, B6 and B7 were copied by hand from the calls that sent them. A command comparison with what the workers
+received was attempted and was not possible: the local worker transcript files were empty when
+checked.
+
 ## Discarded first setup attempt, carried over verbatim from its PROMPTS.md
 
 ### D1. Owner → coordinator, before Step 0

@@ -50,7 +50,12 @@ const toolLogs = [
   ['cursor-user-dir', /Cursor[\\/]+User/i],
   ['system-reminder-tag', /<system-reminder>/i],
 ];
-const allowedUrl = /^https?:\/\/(127\.0\.0\.1|localhost)([:/]|$)|^https:\/\/docs\.claude\.com\/en\/docs\/about-claude\/pricing/;
+// Code that implements the defensive <system-reminder> stripping may name that tag, and only that tag.
+const tagCode = new Set(['backend/internal/ingest/ingest.go', 'backend/internal/model/model.go']);
+// Go tests may use the invented drive path C:\data\ to test absolute --input handling; any other
+// drive path, and every user path, username and email rule, still applies to them.
+const inventedDrivePath = /(^|[^A-Za-z0-9])C:\\+data\\+/g;
+const allowedUrl =/^https?:\/\/(127\.0\.0\.1|localhost)([:/]|$)|^https:\/\/docs\.claude\.com\/en\/docs\/about-claude\/pricing/;
 
 // 3. First-prompt fingerprints: first 40 normalised characters of each session's first prompt.
 const prompts = [];
@@ -65,9 +70,13 @@ for (const f of files) {
   const lines = readFileSync(f, 'utf8').split(/\r?\n/);
   lines.forEach((text, i) => {
     const n = i + 1;
-    if (!self) for (const [rule, re] of identity) if (re.test(text)) hit(f, n, rule);
+    if (!self)
+      for (const [rule, re] of identity) {
+        const checked = rule === 'windows-drive-path' && /_test\.go$/.test(f) ? text.replace(inventedDrivePath, '$1') : text;
+        if (re.test(checked)) hit(f, n, rule);
+      }
     if (!barrierDocs.has(f) && !/_test\.go$/.test(f) && !f.startsWith('backend/testdata/'))
-      for (const [rule, re] of toolLogs) if (re.test(text)) hit(f, n, rule);
+      for (const [rule, re] of toolLogs) if (re.test(text) && !(rule === 'system-reminder-tag' && tagCode.has(f))) hit(f, n, rule);
     if (/^(backend\/|frontend\/src\/)/.test(f) && !/_test\.go$/.test(f))
       for (const m of text.matchAll(/https?:\/\/[^\s"'`)<>]+/g)) if (!allowedUrl.test(m[0])) hit(f, n, 'external-url');
     const low = text.toLowerCase().replace(/\s+/g, ' ');

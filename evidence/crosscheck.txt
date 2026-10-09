@@ -1,0 +1,10 @@
+oracle total USD 41.119147 over 465 api_request events
+known total USD 38.013590 over 467 assistant records
+matched 455 requests by session id, model and timestamp; token mismatches 0
+  claude-opus-4-1-20250805           matched  170  known  28.637403  oracle  28.637405  delta +0.0000
+  claude-sonnet-4-5-20250929         matched  191  known   6.502068  oracle   6.502072  delta +0.0000
+  claude-sonnet-4-5-20250929[1m]     matched   57  known   1.962630  oracle   3.498361  delta +1.5357
+  claude-sonnet-5                    matched   37  known   0.892495  oracle   1.338742  delta +0.4462
+oracle requests without a priced record: 10, USD +1.1426 (10 match a record that has no usage)
+records absent from the oracle: 2, USD -0.0190 (2 sidechain) claude-haiku-4-5-20251001=2
+reconciliation: known 38.013590 + matched deltas +1.9820 + oracle-only +1.1426 - log-only 0.0190 = 41.119147 (oracle 41.119147, residual +0.000000)
