@@ -32,13 +32,16 @@ assistance. Authorship is documented here (sessions, models, tool use) and in PR
 
 ### Session A (setup: PR0a, PR0b, PR0c)
 
-- Model: Opus 5.5, `claude-opus-5-5` (from the session's own environment description).
-  Effort as `/model` shows it: **pending, to be read out by the owner** (the coordinator cannot
-  run `/model`). Why this choice for setup: **pending the owner's sentence**.
+- Model and effort, as the owner read them from `/model`: `claude-opus-5-5` at high effort.
+- Why (owner): chosen for setup because these files shape every later step.
 - Location: an app-created git worktree of this repository,
   `<repo>/.claude/worktrees/session-a-kickoff-e3a8f5`, branch `crs/session-a-kickoff-e3a8f5`.
   The worktree's root is "the project folder" for every rule. PR0a is on `pr0a-steering`,
-  created from `main`.
+  created from `main`; PR0b on `pr0b-contract`, created from `origin/main` after PR0a's
+  squash merge (`2044dd4`). `gh pr merge --squash --delete-branch` merged on GitHub but could not
+  switch this worktree to `main` (it is checked out in the main checkout, which this session
+  must not edit), so the coordinator deleted the remote branch with `git push origin --delete`
+  and branched from `origin/main` instead of pulling `main`.
 - Step 0 ran twice. First run: `.handoff/` was missing from the worktree (it is excluded from
   git, so the app did not copy it), so the coordinator stopped and asked. It also reported that
   local `main` (`466eeeb`) was behind `origin/main` (`7c74fc2`, the recreated fixtures commit)
@@ -72,6 +75,24 @@ discarded attempt: the Go side carries the accounting, pricing and evaluation lo
 subtle error costs most; the React side is a typed rendering of a frozen contract. When
 Session B launches the workers it records here the exact model id each alias resolved to.
 
+### Held-out labels (PR0b)
+
+Written into `fixtures/labels/heldout.json` directly from the kickoff block. Provenance, in the
+same words as the file and SPEC.md:
+
+> AI-proposed by the planning session (claude-opus-5-5) from the first prompt only, before any rule
+> existed in this repository; the owner accepted all ten unchanged. Not hand-labelled. Selection:
+> the first ten of every third sorted session id from index 2.
+
+Checked by command (Evidence, PR0b): the ten ids are exactly the selection rule's ids, all ten
+categories are in the taxonomy, and the file is identical to the kickoff block. Frozen.
+
+Caveat for reading the PR2 agreement number (carried over from the discarded attempt's notes):
+proposer and rule-writer are both Claude models, so agreement measures consistency with an AI
+reading of the same first prompt, not with a human judgement; and the planning session also
+read the earlier attempt (read-only, for data facts), so independence from that attempt's
+taxonomy is not guaranteed.
+
 ## Reuse from the discarded attempt (`.handoff/pr0-draft/`)
 
 | Draft file(s) | In | Changed |
@@ -89,7 +110,10 @@ Session B launches the workers it records here the exact model id each alias res
 | LICENSE, `.editorconfig` | PR0a | unchanged |
 | `.gitignore` | PR0a | unchanged from `main` (already has `.claude/worktrees/`); the draft's `evidence/*.tmp` line dropped (no step writes such files) |
 | `.gitattributes` | PR0a | `linguist-generated=true` for `frontend/package-lock.json` and `frontend/src/api/contract.gen.ts` |
-| `contract/**`, `fixtures/labels/heldout.json` | PR0b | to be re-verified there |
+| `contract/*.schema.json`, `contract/examples/models.json`, `contract/examples/error.json` | PR0b | unchanged; re-verified (Evidence, PR0b) |
+| `contract/examples/summary.json` | PR0b | `"sidechain"` flag added to the Sonnet `by_model` row: the draft reported 1 sidechain record with no model flagged (AI was wrong, #2) |
+| `contract/README.md` | PR0b | "frozen at the end of PR0" → "once PR0b is merged"; Go and frontend drift checks marked PR0c |
+| `fixtures/labels/heldout.json` | PR0b | "Frozen in PR0" → "PR0b"; provenance statement extended with the selection sentence so it matches the kickoff wording exactly |
 | `backend/**`, `frontend/**` | PR0c | to be re-verified there |
 | `evidence/manifest.txt`, `evidence/tags.txt` | not reused | written by `/corpus-check` from PR1; PR0a records the same commands' output below |
 | `docker-compose.yml` placeholder | not reused | not in any setup PR's file list; PR4 writes the real file |
@@ -100,6 +124,7 @@ Session B launches the workers it records here the exact model id each alias res
 | When | Tool | What | Outcome |
 | --- | --- | --- | --- |
 | Discarded attempt, 19:41 to 19:51 | `claude-code-guide` subagent (docs lookup, not a worker) | settings keys, agent and skill frontmatter, rule syntax, hook exit codes | applied in the draft and reused here; **unverified** beyond the docs answer |
+| PR0b | one-off Node script in the session's scratch folder (not in the repository) | validates the three examples against their schemas (draft-07 subset: type, required, closed objects, enum, `$ref` across files, min/max, pattern), checks every object schema is closed with every key required, recomputes every derived number in the examples, compares the labels with the kickoff block | found AI was wrong #2; after the fix all checks pass. The durable checks are PR0c's `TestExamplesDecodeStrictly` and `contract:check` |
 | PR0a | `/privacy-scan`, `/review-step`, `/corpus-check` | the skills are added by PR0a itself and load only in a session started after it is merged | their SKILL.md steps were run by hand; the privacy scan is the same script the skill runs |
 
 ## Evidence
@@ -133,6 +158,31 @@ PLAN.md; backend and frontend suites not applicable (directories do not exist); 
 document numbers (34, 1107, 0/0/0) trace to the commands above, planning numbers in SPEC.md
 are labelled unverified with the test that will confirm them.
 
+### PR0b checks (2026-10-09, run by hand between 21:34 and 21:37)
+
+| Check | Command | Result | Level |
+| --- | --- | --- | --- |
+| Held-out ids follow the selection rule | `node -e` over the sorted fixture file names (indices 2, 5, …, 29) compared with `heldout.json` | `sessions 34 \| ids match selection rule: true \| count 10 \| categories valid: true \| taxonomy equals contract: true` | command output |
+| File name = `sessionId` inside it | `grep -o '"sessionId":"…"'` per file, compared with the file name | no mismatch | command output |
+| Examples valid against schemas | scratch `check-contract.mjs` | `schema: all three examples valid; every object closed, every key required` | command output |
+| Examples internally consistent | same script | first run `sidechain diagnostic without a sidechain flag`; after the fix `consistency: all derived numbers agree` | command output |
+| Labels equal the kickoff block | same script | `labels: identical to the kickoff block (10/10)` | command output |
+| Validator catches errors | `error.json` temporarily given an extra key and a bad `code` | `error.error: extra extra`, `error.error.code: pattern`; restored, exit 0 | command output |
+
+### Review PR0b (2026-10-09 21:37, `/review-step` steps run by hand)
+
+Blocking: none.
+Non-blocking: 1. The contract consistency check is a one-off scratch script, not in the
+repository; PR0c's `TestExamplesDecodeStrictly` and `npm run contract:check` are the durable
+checks, and they test shape, not arithmetic. 2. Skills still not invocable in this session.
+Commands: `git diff --cached --name-only` → 14 paths: `contract/**` and
+`fixtures/labels/heldout.json` (PR0b's own additions; allowed in PR0b) plus documents; no path
+under `fixtures/claude-code/`, `fixtures/otel/`, `backend/` or `frontend/`; no test named for
+PR0b in PLAN.md; backend and frontend suites not applicable; privacy scan `30 files scanned, 34
+first-prompt fingerprints, 0 hit(s)`; `git ls-files .handoff` → 0; `git diff --cached --check`
+clean; PROMPTS.md entry 5 added; PLAN.md ledger row for PR0b stamped at start; the checks
+above pass.
+
 ## Decisions taken in setup
 
 | Decision | Why |
@@ -143,6 +193,11 @@ are labelled unverified with the test that will confirm them.
 | Generated files marked `linguist-generated`, generated line counts stated per PR | reviewers can see how much of a diff is hand-written |
 | Bash guard hook parses the hook JSON and tests only `tool_input.command` | the payload always contains a transcript path under the user's Claude directory; grepping stdin would block every command |
 | First-prompt extraction for the privacy scan lives in `.claude/skills/privacy-scan/first-prompts.mjs` (Node, repo-local) | the Go parser does not exist in setup; the scan needs the fingerprints at run time |
+| Contract: every key required, objects closed, unmeasurable values `null` (carried from the draft) | strict drift tests in both directions; 0 would be a false measurement |
+| `unparsed_fraction = (malformed + unknown) / total`; duplicates count as parsed-equivalent for this fraction | duplicates were read correctly, they are just not new |
+| `ModelSpend.flags` is a closed enum: `missing_usage`, `unknown_model`, `no_cache_fields`, `long_context_marker`, `sidechain` | the page can explain every flag |
+| Contract examples use three fake session ids and small invented numbers | examples must not look like corpus findings |
+| Held-out provenance in the labels file, SPEC.md and NOTES.md in identical words | owner's instruction; the agreement number is read against it |
 | Pricing source URL `https://docs.claude.com/en/docs/about-claude/pricing` allowed by the scan | **unverified** (web tools are denied by settings); PR1 must confirm the rates it encodes |
 
 ## AI was wrong
@@ -150,6 +205,7 @@ are labelled unverified with the test that will confirm them.
 | # | Claim | Who | How caught | Fix |
 | --- | --- | --- | --- | --- |
 | 1 | Session logs contain `<system-reminder>` and `command-*` tags and `isMeta` records that must be stripped | earlier planning (AI-assisted) | grep: 0, 0, 0 (Evidence, PR0a) | stripping kept as defensive code with a synthetic test; SPEC does not claim the tags were observed |
+| 2 | The contract examples are internally consistent | discarded setup attempt (its checks passed the strict-decode test, which tests shape, not arithmetic) | PR0b consistency script: 1 sidechain record in `diagnostics`, no `sidechain` flag on any model | flag added to the Sonnet row of `contract/examples/summary.json` |
 
 ## Another day
 

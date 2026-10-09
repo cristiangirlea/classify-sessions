@@ -1,0 +1,182 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "summary.schema.json",
+  "title": "SummaryResponse",
+  "description": "GET /api/summary. Marshalled once at startup. No prompt text, absolute paths or usernames anywhere.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["generated_at", "source", "records", "sessions", "categories", "spend", "pricing", "classifier", "session_list", "example_request", "model_choice"],
+  "properties": {
+    "generated_at": { "type": "string", "format": "date-time" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["files", "input_hint"],
+      "properties": {
+        "files": { "type": "integer", "minimum": 0 },
+        "input_hint": { "type": "string", "description": "Relative input directory as given on the command line; never an absolute path." }
+      }
+    },
+    "records": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "parsed", "malformed", "unknown", "duplicate", "unparsed_fraction", "diagnostics"],
+      "description": "Every nonblank line is exactly one of parsed, malformed, unknown, duplicate: total = parsed + malformed + unknown + duplicate.",
+      "properties": {
+        "total": { "type": "integer", "minimum": 0 },
+        "parsed": { "type": "integer", "minimum": 0 },
+        "malformed": { "type": "integer", "minimum": 0 },
+        "unknown": { "type": "integer", "minimum": 0 },
+        "duplicate": { "type": "integer", "minimum": 0 },
+        "unparsed_fraction": { "type": "number", "minimum": 0, "maximum": 1, "description": "(malformed + unknown) / total; 0 when total is 0." },
+        "diagnostics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["missing_usage", "missing_timestamp", "missing_cache_fields", "sidechain"],
+          "properties": {
+            "missing_usage": { "type": "integer", "minimum": 0 },
+            "missing_timestamp": { "type": "integer", "minimum": 0 },
+            "missing_cache_fields": { "type": "integer", "minimum": 0 },
+            "sidechain": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "sessions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total", "classified", "unclassified", "unclassified_fraction_sessions", "unclassified_fraction_records"],
+      "properties": {
+        "total": { "type": "integer", "minimum": 0 },
+        "classified": { "type": "integer", "minimum": 0 },
+        "unclassified": { "type": "integer", "minimum": 0 },
+        "unclassified_fraction_sessions": { "type": "number", "minimum": 0, "maximum": 1 },
+        "unclassified_fraction_records": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "categories": { "type": "array", "items": { "$ref": "#/definitions/CategorySummary" }, "description": "Taxonomy order; categories with zero sessions omitted." },
+    "spend": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["total_usd", "incomplete_sessions", "components", "by_model"],
+      "properties": {
+        "total_usd": { "type": "number", "minimum": 0, "description": "Known USD; a lower bound when incomplete_sessions > 0." },
+        "incomplete_sessions": { "type": "integer", "minimum": 0 },
+        "components": { "$ref": "#/definitions/Components" },
+        "by_model": { "type": "array", "items": { "$ref": "#/definitions/ModelSpend" } }
+      }
+    },
+    "pricing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_url", "as_of", "cache_read_multiplier", "cache_write_multiplier", "assumptions"],
+      "properties": {
+        "source_url": { "type": "string" },
+        "as_of": { "type": "string", "format": "date" },
+        "cache_read_multiplier": { "type": "number" },
+        "cache_write_multiplier": { "type": "number" },
+        "assumptions": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "classifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "taxonomy", "heldout"],
+      "properties": {
+        "method": { "type": "string", "description": "e.g. rules-v1" },
+        "taxonomy": { "type": "array", "items": { "$ref": "#/definitions/Category" } },
+        "heldout": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["labelled", "agreements", "agreement_fraction", "disagreements"],
+          "properties": {
+            "labelled": { "type": "integer", "minimum": 0 },
+            "agreements": { "type": "integer", "minimum": 0 },
+            "agreement_fraction": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+            "disagreements": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["session_id", "labelled", "predicted", "rule"],
+                "properties": {
+                  "session_id": { "type": "string" },
+                  "labelled": { "$ref": "#/definitions/Category" },
+                  "predicted": { "$ref": "#/definitions/Category" },
+                  "rule": { "type": ["string", "null"], "description": "Rule id that fired; null when no rule matched." }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "session_list": { "type": "array", "items": { "$ref": "#/definitions/SessionRow" } },
+    "example_request": { "type": "string" },
+    "model_choice": { "$ref": "models.schema.json" }
+  },
+  "definitions": {
+    "Category": {
+      "type": "string",
+      "enum": ["debug", "implement", "refactor", "test", "review", "research", "plan", "ops", "unknown"]
+    },
+    "Components": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input_usd", "output_usd", "cache_read_usd", "cache_write_usd"],
+      "properties": {
+        "input_usd": { "type": "number", "minimum": 0 },
+        "output_usd": { "type": "number", "minimum": 0 },
+        "cache_read_usd": { "type": "number", "minimum": 0 },
+        "cache_write_usd": { "type": "number", "minimum": 0 }
+      }
+    },
+    "CategorySummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["category", "sessions", "records", "cost_usd", "cost_incomplete_sessions", "components"],
+      "properties": {
+        "category": { "$ref": "#/definitions/Category" },
+        "sessions": { "type": "integer", "minimum": 0 },
+        "records": { "type": "integer", "minimum": 0 },
+        "cost_usd": { "type": "number", "minimum": 0 },
+        "cost_incomplete_sessions": { "type": "integer", "minimum": 0 },
+        "components": { "$ref": "#/definitions/Components" }
+      }
+    },
+    "ModelSpend": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model", "price_key", "requests", "cost_usd", "flags"],
+      "properties": {
+        "model": { "type": "string", "description": "Model id exactly as logged." },
+        "price_key": { "type": ["string", "null"], "description": "Price table key; null when the model is unknown to the table." },
+        "requests": { "type": "integer", "minimum": 0 },
+        "cost_usd": { "type": "number", "minimum": 0 },
+        "flags": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["missing_usage", "unknown_model", "no_cache_fields", "long_context_marker", "sidechain"] }
+        }
+      }
+    },
+    "SessionRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "started_at", "ended_at", "records", "category", "rule", "cost_usd", "cost_complete", "requests", "models", "tool_calls", "tool_errors"],
+      "properties": {
+        "id": { "type": "string" },
+        "started_at": { "type": ["string", "null"], "format": "date-time" },
+        "ended_at": { "type": ["string", "null"], "format": "date-time" },
+        "records": { "type": "integer", "minimum": 0 },
+        "category": { "$ref": "#/definitions/Category" },
+        "rule": { "type": ["string", "null"] },
+        "cost_usd": { "type": "number", "minimum": 0 },
+        "cost_complete": { "type": "boolean" },
+        "requests": { "type": "integer", "minimum": 0 },
+        "models": { "type": "array", "items": { "type": "string" } },
+        "tool_calls": { "type": "integer", "minimum": 0 },
+        "tool_errors": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

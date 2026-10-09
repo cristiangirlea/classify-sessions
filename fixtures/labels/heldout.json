@@ -1,0 +1,26 @@
+{
+  "description": "Held-out labels for evaluating classifier rules-v1. Frozen in PR0b. Never read while writing or tuning rules.",
+  "provenance": {
+    "statement": "AI-proposed by the planning session (claude-opus-5-5) from the first prompt only, before any rule existed in this repository; the owner accepted all ten unchanged. Not hand-labelled. Selection: the first ten of every third sorted session id from index 2.",
+    "proposed_by": "planning session, model claude-opus-5-5",
+    "basis": "first genuine prompt of each session only",
+    "proposed_before": "any classifier rule existed in this repository",
+    "accepted_by": "owner",
+    "owner_changes": 0,
+    "recorded": "2026-10-09"
+  },
+  "selection_rule": "the first ten of every third sorted session id from index 2",
+  "taxonomy": ["debug", "implement", "refactor", "test", "review", "research", "plan", "ops", "unknown"],
+  "labels": [
+    { "session_id": "13c00ba6-7327-4395-92ce-79c99c01eec2", "category": "implement" },
+    { "session_id": "3078317f-3651-4cd1-a636-179fb0258f6c", "category": "research" },
+    { "session_id": "46005915-6314-4bc3-9f01-e1d44787f85f", "category": "debug" },
+    { "session_id": "6061f190-d64b-41d4-8d7b-de81a3d6b6ee", "category": "implement" },
+    { "session_id": "9073096a-e478-40da-a27a-79109f97d132", "category": "review" },
+    { "session_id": "a52951be-2f0c-4a2d-932e-5d9250e57318", "category": "ops" },
+    { "session_id": "b6e5b315-c446-41de-8e5b-07f85039b0e0", "category": "debug" },
+    { "session_id": "ca797bb9-9719-4a2b-ab73-456557d501d5", "category": "test" },
+    { "session_id": "d0bd888f-1575-4e97-a316-2ff225ef23f5", "category": "review" },
+    { "session_id": "db863291-aa9c-4f5b-ac06-6ca050474b8c", "category": "plan" }
+  ]
+}

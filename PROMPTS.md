@@ -40,6 +40,13 @@ dont add yourself manually to the  commits, just mentioned assisted
 
 Applied: no `Co-Authored-By` trailer; commit messages say "Assisted by Claude Code."
 
+### 5. Owner → coordinator, after PR0a was ready (21:26), received by 21:33, not stamped
+
+```text
+approved. Model and effort: claude-opus-5-5 at high effort, chosen for setup because
+these files shape every later step. Merge PR0a and continue with PR0b.
+```
+
 ## Discarded first setup attempt (19:41 to 20:00), carried over verbatim from its PROMPTS.md
 
 ### D1. Owner → coordinator, before T0, not stamped

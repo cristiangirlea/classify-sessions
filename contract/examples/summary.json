@@ -1,0 +1,358 @@
+{
+  "generated_at": "2026-10-09T12:00:00Z",
+  "source": {
+    "files": 3,
+    "input_hint": "fixtures/claude-code"
+  },
+  "records": {
+    "total": 40,
+    "parsed": 36,
+    "malformed": 1,
+    "unknown": 1,
+    "duplicate": 2,
+    "unparsed_fraction": 0.05,
+    "diagnostics": {
+      "missing_usage": 1,
+      "missing_timestamp": 0,
+      "missing_cache_fields": 0,
+      "sidechain": 1
+    }
+  },
+  "sessions": {
+    "total": 3,
+    "classified": 2,
+    "unclassified": 1,
+    "unclassified_fraction_sessions": 0.3333333333333333,
+    "unclassified_fraction_records": 0.2
+  },
+  "categories": [
+    {
+      "category": "debug",
+      "sessions": 1,
+      "records": 18,
+      "cost_usd": 0.2295,
+      "cost_incomplete_sessions": 0,
+      "components": {
+        "input_usd": 0.03,
+        "output_usd": 0.15,
+        "cache_read_usd": 0.012,
+        "cache_write_usd": 0.0375
+      }
+    },
+    {
+      "category": "implement",
+      "sessions": 1,
+      "records": 14,
+      "cost_usd": 1.1475,
+      "cost_incomplete_sessions": 1,
+      "components": {
+        "input_usd": 0.15,
+        "output_usd": 0.75,
+        "cache_read_usd": 0.06,
+        "cache_write_usd": 0.1875
+      }
+    },
+    {
+      "category": "unknown",
+      "sessions": 1,
+      "records": 8,
+      "cost_usd": 0.036,
+      "cost_incomplete_sessions": 0,
+      "components": {
+        "input_usd": 0.006,
+        "output_usd": 0.03,
+        "cache_read_usd": 0,
+        "cache_write_usd": 0
+      }
+    }
+  ],
+  "spend": {
+    "total_usd": 1.413,
+    "incomplete_sessions": 1,
+    "components": {
+      "input_usd": 0.186,
+      "output_usd": 0.93,
+      "cache_read_usd": 0.072,
+      "cache_write_usd": 0.225
+    },
+    "by_model": [
+      {
+        "model": "claude-opus-4-1-20250805",
+        "price_key": "claude-opus-4-1",
+        "requests": 5,
+        "cost_usd": 1.1475,
+        "flags": [
+          "missing_usage"
+        ]
+      },
+      {
+        "model": "claude-sonnet-4-5-20250929",
+        "price_key": "claude-sonnet-4-5",
+        "requests": 8,
+        "cost_usd": 0.2655,
+        "flags": [
+          "sidechain"
+        ]
+      }
+    ]
+  },
+  "pricing": {
+    "source_url": "https://docs.claude.com/en/docs/about-claude/pricing",
+    "as_of": "2026-10-09",
+    "cache_read_multiplier": 0.1,
+    "cache_write_multiplier": 1.25,
+    "assumptions": [
+      "Cache writes are priced as 5-minute writes (1.25x input).",
+      "Requests marked [1m] are priced at base rates because no request exceeds the long-context threshold; they are flagged.",
+      "A request with no usage contributes no cost and marks its session incomplete."
+    ]
+  },
+  "classifier": {
+    "method": "rules-v1",
+    "taxonomy": [
+      "debug",
+      "implement",
+      "refactor",
+      "test",
+      "review",
+      "research",
+      "plan",
+      "ops",
+      "unknown"
+    ],
+    "heldout": {
+      "labelled": 2,
+      "agreements": 1,
+      "agreement_fraction": 0.5,
+      "disagreements": [
+        {
+          "session_id": "00000000-0000-4000-8000-00000000000c",
+          "labelled": "research",
+          "predicted": "unknown",
+          "rule": null
+        }
+      ]
+    }
+  },
+  "session_list": [
+    {
+      "id": "00000000-0000-4000-8000-00000000000a",
+      "started_at": "2026-08-01T09:00:00Z",
+      "ended_at": "2026-08-01T09:20:00Z",
+      "records": 18,
+      "category": "debug",
+      "rule": "debug.why-does",
+      "cost_usd": 0.2295,
+      "cost_complete": true,
+      "requests": 6,
+      "models": [
+        "claude-sonnet-4-5-20250929"
+      ],
+      "tool_calls": 4,
+      "tool_errors": 1
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000000b",
+      "started_at": "2026-08-02T10:00:00Z",
+      "ended_at": "2026-08-02T10:45:00Z",
+      "records": 14,
+      "category": "implement",
+      "rule": "implement.add",
+      "cost_usd": 1.1475,
+      "cost_complete": false,
+      "requests": 5,
+      "models": [
+        "claude-opus-4-1-20250805"
+      ],
+      "tool_calls": 3,
+      "tool_errors": 0
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000000c",
+      "started_at": "2026-08-03T11:00:00Z",
+      "ended_at": "2026-08-03T11:05:00Z",
+      "records": 8,
+      "category": "unknown",
+      "rule": null,
+      "cost_usd": 0.036,
+      "cost_complete": true,
+      "requests": 2,
+      "models": [
+        "claude-sonnet-4-5-20250929"
+      ],
+      "tool_calls": 0,
+      "tool_errors": 0
+    }
+  ],
+  "example_request": "curl -s http://127.0.0.1:8080/api/summary",
+  "model_choice": {
+    "models": [
+      "claude-opus-4-1",
+      "claude-sonnet-4-5"
+    ],
+    "categories": [
+      {
+        "category": "debug",
+        "comparable": false,
+        "supported": false,
+        "reason": "only one model has a session in this category",
+        "cells": [
+          {
+            "model": "claude-sonnet-4-5",
+            "category": "debug",
+            "sessions": 1,
+            "mixed_model_sessions": 0,
+            "long_context_sessions": 0,
+            "complete_cost_sessions": 1,
+            "mean_known_usd": 0.2295,
+            "median_known_usd": 0.2295,
+            "total_known_usd": 0.2295,
+            "user_messages": 3,
+            "correction_messages": 1,
+            "correction_rate": 0.3333333333333333,
+            "corrected_sessions": 1,
+            "tool_results_known": 4,
+            "tool_failures": 1,
+            "tool_failure_rate": 0.25,
+            "unknown_outcome_results": 0,
+            "session_ids": [
+              "00000000-0000-4000-8000-00000000000a"
+            ]
+          }
+        ]
+      },
+      {
+        "category": "implement",
+        "comparable": false,
+        "supported": false,
+        "reason": "only one model has a session in this category",
+        "cells": [
+          {
+            "model": "claude-opus-4-1",
+            "category": "implement",
+            "sessions": 1,
+            "mixed_model_sessions": 0,
+            "long_context_sessions": 0,
+            "complete_cost_sessions": 0,
+            "mean_known_usd": 1.1475,
+            "median_known_usd": 1.1475,
+            "total_known_usd": 1.1475,
+            "user_messages": 2,
+            "correction_messages": 0,
+            "correction_rate": 0,
+            "corrected_sessions": 0,
+            "tool_results_known": 3,
+            "tool_failures": 0,
+            "tool_failure_rate": 0,
+            "unknown_outcome_results": 0,
+            "session_ids": [
+              "00000000-0000-4000-8000-00000000000b"
+            ]
+          }
+        ]
+      },
+      {
+        "category": "unknown",
+        "comparable": false,
+        "supported": false,
+        "reason": "unknown is reported, never compared",
+        "cells": [
+          {
+            "model": "claude-sonnet-4-5",
+            "category": "unknown",
+            "sessions": 1,
+            "mixed_model_sessions": 0,
+            "long_context_sessions": 0,
+            "complete_cost_sessions": 1,
+            "mean_known_usd": 0.036,
+            "median_known_usd": 0.036,
+            "total_known_usd": 0.036,
+            "user_messages": 1,
+            "correction_messages": 0,
+            "correction_rate": 0,
+            "corrected_sessions": 0,
+            "tool_results_known": 0,
+            "tool_failures": 0,
+            "tool_failure_rate": null,
+            "unknown_outcome_results": 0,
+            "session_ids": [
+              "00000000-0000-4000-8000-00000000000c"
+            ]
+          }
+        ]
+      }
+    ],
+    "model_totals": [
+      {
+        "model": "claude-opus-4-1",
+        "category": "all",
+        "sessions": 1,
+        "mixed_model_sessions": 0,
+        "long_context_sessions": 0,
+        "complete_cost_sessions": 0,
+        "mean_known_usd": 1.1475,
+        "median_known_usd": 1.1475,
+        "total_known_usd": 1.1475,
+        "user_messages": 2,
+        "correction_messages": 0,
+        "correction_rate": 0,
+        "corrected_sessions": 0,
+        "tool_results_known": 3,
+        "tool_failures": 0,
+        "tool_failure_rate": 0,
+        "unknown_outcome_results": 0,
+        "session_ids": [
+          "00000000-0000-4000-8000-00000000000b"
+        ]
+      },
+      {
+        "model": "claude-sonnet-4-5",
+        "category": "all",
+        "sessions": 2,
+        "mixed_model_sessions": 0,
+        "long_context_sessions": 0,
+        "complete_cost_sessions": 2,
+        "mean_known_usd": 0.13275,
+        "median_known_usd": 0.13275,
+        "total_known_usd": 0.2655,
+        "user_messages": 4,
+        "correction_messages": 1,
+        "correction_rate": 0.25,
+        "corrected_sessions": 1,
+        "tool_results_known": 4,
+        "tool_failures": 1,
+        "tool_failure_rate": 0.25,
+        "unknown_outcome_results": 0,
+        "session_ids": [
+          "00000000-0000-4000-8000-00000000000a",
+          "00000000-0000-4000-8000-00000000000c"
+        ]
+      }
+    ],
+    "excluded_sessions": [],
+    "advice": {
+      "expensive_model": null,
+      "comparator_model": null,
+      "shared_categories": [],
+      "cost_ratio": null,
+      "verdict": "no_comparison_possible",
+      "statement": "No category has sessions from two models, so the logs allow no model comparison.",
+      "caveats": [
+        "1 session has incomplete cost; its known cost is a lower bound.",
+        "Correction messages are found by keyword rules and can miss or misread corrections.",
+        "The comparison is descriptive and makes no causal claim."
+      ]
+    },
+    "definitions": {
+      "dominant_model": "Canonical model family (date suffix and [1m] stripped) with the most assistant records after dedupe; ties broken by known USD, then name. The whole session is attributed to it.",
+      "comparable_category": "A non-unknown category where at least two models have a session.",
+      "supported_category": "A comparable category with at least three sessions per model; only supported categories inform the advice.",
+      "cost_per_session": "Known USD at dated public rates; a lower bound when the session's cost is incomplete.",
+      "correction_message": "A genuine user message, after the first, that matches the anchored opener or phrase rules, case-insensitive.",
+      "correction_rate": "Correction messages divided by genuine user messages, pooled per cell.",
+      "tool_failure_rate": "Failed results divided by known results, first result per tool-call id in chronological order."
+    },
+    "pricing_source": "https://docs.claude.com/en/docs/about-claude/pricing",
+    "pricing_date": "2026-10-09"
+  }
+}
