@@ -24,7 +24,6 @@
       "Bash(curl * http://127.0.0.1:*)",
       "Bash(curl http://127.0.0.1:*)",
       "Bash(sha256sum *)",
-      "Bash(date *)",
       "Bash(node .claude/skills/privacy-scan/scan.mjs*)"
     ],
     "ask": [

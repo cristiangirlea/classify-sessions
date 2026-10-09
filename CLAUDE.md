@@ -64,6 +64,12 @@ node .claude/skills/privacy-scan/scan.mjs        # the script the privacy-scan s
 - No commit, push or PR unless the owner asked for that step. No `Co-Authored-By` trailer or
   generated-by footer (`attribution` is empty in settings); AI authorship is documented in
   NOTES.md and PROMPTS.md.
+- Every test and check runs locally in the working copy; there is no CI and no GitHub workflow.
+- The repository records no times, in documents, commit messages or PR descriptions. PLAN.md
+  holds the PR sequence, PR contents and cut order.
+- SPEC.md has exactly five sections (problem, format findings, decisions on unsettled points,
+  out of scope, how customer and employer data were kept out). Findings and decisions are
+  appended as tests confirm them; existing SPEC text is not rewritten.
 - Generated files (`frontend/package-lock.json`, `frontend/src/api/contract.gen.ts`) are marked
   `linguist-generated` in `.gitattributes`; every PR description states how many of its lines
   are generated.
@@ -80,8 +86,7 @@ When a worker's claim is disproved, it goes in the NOTES.md "AI was wrong" table
 1. `go vet ./... && go test ./... -count=1` and the frontend chain above are green.
 2. `/corpus-check` run after any parser, rule or price change; its block pasted into NOTES.md.
 3. `/review-step` shows no blocking finding; `/privacy-scan` exits 0.
-4. PROMPTS.md has the PR's section with every prompt verbatim; the PLAN.md ledger row is stamped
-   with `date +%H:%M`.
+4. PROMPTS.md has the PR's section with every prompt verbatim.
 
 ## Environment notes (Windows host)
 

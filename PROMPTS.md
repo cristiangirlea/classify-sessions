@@ -2,12 +2,12 @@
 
 Every prompt that steered this run, verbatim, in order. Absolute paths are replaced by
 `<repo>` (the project folder) and each replacement is marked `[path replaced]`. Anything not
-verbatim is labelled **paraphrase**. Times are `date +%H:%M`; "not stamped" means no command
-recorded the time.
+verbatim is labelled **paraphrase**. `[…]` marks text about time-keeping removed from a prompt
+at the owner's request; nothing else inside a prompt is changed.
 
 ## Setup, Session A (PR0a to PR0c)
 
-### 1. Owner → coordinator, before T0, not stamped
+### 1. Owner → coordinator, before Step 0
 
 ```text
 Read .handoff/KICKOFF.md and follow the Session A instructions exactly.
@@ -18,7 +18,7 @@ Read .handoff/KICKOFF.md and follow the Session A instructions exactly.
 same text as Appendix B (compared by eye, not by command). Its Step 0 says to stop when
 `.handoff/` is missing, so the coordinator stopped and asked the owner to copy it in.
 
-### 2. Owner → coordinator, before T0 (T0 = 21:18), not stamped
+### 2. Owner → coordinator, after the first Step 0 run
 
 ```text
 .handoff/ is now in your worktree, and KICKOFF.md there is a newer version: setup is
@@ -28,11 +28,11 @@ The old pr0-scaffold branch and its worktree are deleted; nothing of it is on or
 Local main now points at 7c74fc2, the same as origin/main.
 ```
 
-### 3. Kickoff instructions (`.handoff/KICKOFF.md`, current version), read at 21:18
+### 3. Kickoff instructions (`.handoff/KICKOFF.md`, current version), read after Step 0
 
 Copied verbatim by a command into Appendix A. It contains no absolute path.
 
-### 4. Owner → coordinator, during PR0a (after 21:20), not stamped
+### 4. Owner → coordinator, during PR0a
 
 ```text
 dont add yourself manually to the  commits, just mentioned assisted
@@ -40,14 +40,14 @@ dont add yourself manually to the  commits, just mentioned assisted
 
 Applied: no `Co-Authored-By` trailer; commit messages say "Assisted by Claude Code."
 
-### 5. Owner → coordinator, after PR0a was ready (21:26), received by 21:33, not stamped
+### 5. Owner → coordinator, PR0a approval
 
 ```text
 approved. Model and effort: claude-opus-5-5 at high effort, chosen for setup because
 these files shape every later step. Merge PR0a and continue with PR0b.
 ```
 
-### 6. Owner → coordinator, after PR0b was ready (21:38), not stamped
+### 6. Owner → coordinator, PR0b review
 
 ```text
 Not yet. Before I approve PR0b, add one more commit on the same branch that applies these
@@ -57,13 +57,42 @@ document rules, then re-run the privacy scan and tell me:
   gets its final text in PR4. CLAUDE.md changes only when a rule or a command changes.
 - NOTES.md keeps checks, decisions and the AI-was-wrong table. Git and branch mechanics
   get one line at most; no narration of review time.
-- PLAN.md ledger: start, ready and minutes per PR, nothing else in the notes column.
+- […]
 Then stop and ask for approval again.
 ```
 
-## Discarded first setup attempt (19:41 to 20:00), carried over verbatim from its PROMPTS.md
+### 7. Owner → coordinator, PR0b approval
 
-### D1. Owner → coordinator, before T0, not stamped
+```text
+approved. Merge PR0b and continue with PR0c. Two document changes in PR0c:
+
+1. SPEC.md becomes exactly the five sections the brief lists: the problem as
+   understood, format findings, decisions on unsettled points, out of scope, how
+   customer and employer data were kept out. No status paragraph, no evidence-level
+   legend, no "design not code" caveats, no PR markers; those belong in NOTES.md. Write
+   the problem, the data choice with the privacy method, and out of scope in full now.
+   Findings and decisions are added as the tests confirm them, as new entries; existing
+   text is never rewritten between steps.
+
+2. […] PLAN.md keeps only the PR sequence, what each PR contains,
+   and the cut order. […]
+```
+
+### 8. Owner → coordinator, during PR0c
+
+```text
+dont run any ci, do it locally
+```
+
+### 9. Owner → coordinator, during PR0c
+
+```text
+you run any test locally not in the github
+```
+
+## Discarded first setup attempt, carried over verbatim from its PROMPTS.md
+
+### D1. Owner → coordinator, before Step 0
 
 ```text
 Read .handoff/KICKOFF.md and follow the Session A instructions exactly.
@@ -82,7 +111,7 @@ Step 0, before anything else:
   fixtures commit.
 ```
 
-### D2. Owner → coordinator, before T0 (T0 = 19:41), not stamped
+### D2. Owner → coordinator, after the first Step 0 run
 
 ```text
 Worktree confirmed as intended. I copied .handoff/ into your worktree and updated
@@ -92,11 +121,11 @@ NOTES.md that the session runs in an app-created worktree and that .handoff/ was
 in by the owner.
 ```
 
-### D3. Kickoff instructions (`.handoff/KICKOFF.md`, revised version), read at 19:41
+### D3. Kickoff instructions (`.handoff/KICKOFF.md`, revised version)
 
 Copied verbatim by a command into Appendix B, with the one absolute path replaced.
 
-### D4. Coordinator → `claude-code-guide` subagent (docs lookup), between 19:41 and 19:51, not stamped
+### D4. Coordinator → `claude-code-guide` subagent (docs lookup)
 
 ```text
 Answer from current Claude Code documentation only, citing the doc page for each answer. Be brief.
@@ -112,7 +141,7 @@ ignored, not fatal; `model` accepts `sonnet`, `opus`, `haiku`, `fable`, full ids
 `allowed-tools` is space-separated; skills are invoked as `/<name>` and new skill directories
 need a reload; `Bash(git commit *)` is the current form; a PreToolUse hook blocks with exit 2.
 
-### D5. Owner → coordinator: labels, model and choices, received after the draft PR opened at 19:55, not stamped
+### D5. Owner → coordinator: labels, model and choices, after the draft PR opened
 
 The held-out labelling table was printed to the owner from
 `node .claude/skills/privacy-scan/first-prompts.mjs --sheet fixtures/claude-code <10 ids>`.
@@ -176,20 +205,17 @@ Step 0, before anything else:
   `pr0-draft/`. If anything is missing, stop and ask the owner to copy it in.
 
 Then read `.handoff/plan.md` in full. It is the source of truth for scope, layout, the
-JSON contract, the PR sequence, the minute budget, the stop rule and the cut order.
+JSON contract, the PR sequence, […] and the cut order.
 
 History you must record. A first PR0 attempt of this same run produced all setup files
 as one 49-file pull request. The owner discarded it because setup must land in small
 reviewable steps; the repository was recreated from the fixtures commit. The files from
 that attempt are in `.handoff/pr0-draft/`. Reuse them: they were written for this
 repository under this plan. Re-slice them into the three PRs below, re-verify everything,
-and update what the rules below change. Record in the ledger that the discarded attempt
-ran 19:41 to 20:00 (19 minutes) and count it as time spent.
+and update what the rules below change. […]
 
 Ground rules:
-- The clock continues. Run `date +%H:%M` for a new T0 of this session and keep a ledger
-  in PLAN.md with one row per PR, stamped from `date +%H:%M` at open and at "ready".
-  Never reconstruct a time. The 180-minute budget includes the discarded 19 minutes.
+- […]
 - Record the model and effort this session runs on, exactly as `/model` shows them, in
   NOTES.md, with one sentence on why that choice was made for setup.
 - Never read anything outside the project folder. Never copy code from any earlier
@@ -213,7 +239,7 @@ Ground rules:
   absolute paths replaced by `<repo>`.
 
 PR0a, required files only. The files the brief lists, nothing else:
-README.md, SPEC.md, PLAN.md (with the ledger), NOTES.md, PROMPTS.md, CLAUDE.md,
+README.md, SPEC.md, PLAN.md […], NOTES.md, PROMPTS.md, CLAUDE.md,
 AGENTS.md, `.claude/agents/go-worker.md` and `react-worker.md`, the three skills under
 `.claude/skills/`, `.claude/settings.json`, `.cursor/rules/*.mdc`, plus LICENSE,
 `.editorconfig`, `.gitignore` (with `.claude/worktrees/`) and `.gitattributes`.
@@ -252,7 +278,7 @@ the lock file). Ready when `go vet` and `go test` pass on go1.27.2, and
 all exit 0, and `dev:mock` serves the examples.
 
 After PR0c is merged, write the hand-off to Session B into PLAN.md and stop. Say in your
-final report what was reused from the draft, what changed, and the ledger so far.
+final report what was reused from the draft, what changed, […].
 
 ## Session B: PR1 to PR4, parallel workers
 
@@ -260,8 +286,7 @@ Open only after PR0c is merged, in the project folder. The owner first runs `/ag
 and checks that go-worker and react-worker are listed.
 
 You are the coordinator continuing the clean-room rebuild in this repository. Setup is
-merged. Read CLAUDE.md, AGENTS.md, PLAN.md (the ledger holds the clock; keep using it
-with `date +%H:%M`), SPEC.md, NOTES.md, PROMPTS.md, contract/ and `.handoff/plan.md`
+merged. Read CLAUDE.md, AGENTS.md, PLAN.md […], SPEC.md, NOTES.md, PROMPTS.md, contract/ and `.handoff/plan.md`
 before anything else. Record the model and effort this session runs on, as `/model`
 shows them, in NOTES.md, and the exact model id each worker alias resolves to when you
 first launch it.
@@ -285,8 +310,7 @@ first launch it.
   tuned on the other 24 sessions only, via the `prompts --exclude-labels` subcommand; the
   held-out evaluation runs once at the end of PR2 and is recorded verbatim. Tell the
   go-worker this explicitly in its PR2 prompt.
-- Watch the clock. At T+180 apply the plan's stop rule and cut order, mark the open PR
-  "stopped at timebox", and write the remainder into NOTES.md.
+- […]
 
 Start PR1 now: create the branch, launch go-worker and react-worker in parallel with the
 PR1 task lists from the plan, integrate, verify, open the draft PR, and report what you
@@ -326,12 +350,10 @@ Step 0, before anything else:
 - PR0 adds `.claude/worktrees/` to .gitignore.
 
 Then read `.handoff/plan.md` in full. It is the source of truth for scope, layout, the
-JSON contract, the PR sequence, the minute budget, the stop rule and the cut order.
+JSON contract, the PR sequence, […] and the cut order.
 
 Ground rules:
-- The clock starts after Step 0. Run `date +%H:%M`, record it as T0 in a ledger you
-  create in PLAN.md, and stamp every PR open and every "ready for approval" with
-  `date +%H:%M`. Never reconstruct a time. Stop at T+180 per the plan's stop rule.
+- […]
 - Record the model and effort this session runs on, exactly as `/model` shows them, in
   NOTES.md, with one sentence on why that choice was made for PR0.
 - Never read anything outside the project folder. Never copy code from any earlier
@@ -368,8 +390,7 @@ Open only after PR0 is merged, in the project folder. The owner first runs `/age
 checks that go-worker and react-worker are listed.
 
 You are the coordinator continuing the clean-room rebuild in this repository. PR0 is
-merged. Read CLAUDE.md, AGENTS.md, PLAN.md (the ledger holds T0; keep using that clock
-with `date +%H:%M`), SPEC.md, NOTES.md, PROMPTS.md, contract/ and `.handoff/plan.md`
+merged. Read CLAUDE.md, AGENTS.md, PLAN.md […], SPEC.md, NOTES.md, PROMPTS.md, contract/ and `.handoff/plan.md`
 before anything else. Record the model and effort this session runs on, as `/model` shows
 them, in NOTES.md.
 
@@ -392,8 +413,7 @@ them, in NOTES.md.
   tuned on the other 24 sessions only, via the `prompts --exclude-labels` subcommand; the
   held-out evaluation runs once at the end of PR2 and is recorded verbatim. Tell the
   go-worker this explicitly in its PR2 prompt.
-- Watch the clock. At T+180 apply the plan's stop rule and cut order, mark the open PR
-  "stopped at timebox", and write the remainder into NOTES.md.
+- […]
 
 Start PR1 now: create the branch, launch go-worker and react-worker in parallel with the
 PR1 task lists from the plan, integrate, verify, open the draft PR, and report what you
