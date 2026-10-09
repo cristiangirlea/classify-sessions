@@ -34,34 +34,18 @@ assistance. Authorship is documented here (sessions, models, tool use) and in PR
 
 - Model and effort, as the owner read them from `/model`: `claude-opus-5-5` at high effort.
 - Why (owner): chosen for setup because these files shape every later step.
-- Location: an app-created git worktree of this repository,
-  `<repo>/.claude/worktrees/session-a-kickoff-e3a8f5`, branch `crs/session-a-kickoff-e3a8f5`.
-  The worktree's root is "the project folder" for every rule. PR0a is on `pr0a-steering`,
-  created from `main`; PR0b on `pr0b-contract`, created from `origin/main` after PR0a's
-  squash merge (`2044dd4`). `gh pr merge --squash --delete-branch` merged on GitHub but could not
-  switch this worktree to `main` (it is checked out in the main checkout, which this session
-  must not edit), so the coordinator deleted the remote branch with `git push origin --delete`
-  and branched from `origin/main` instead of pulling `main`.
-- Step 0 ran twice. First run: `.handoff/` was missing from the worktree (it is excluded from
-  git, so the app did not copy it), so the coordinator stopped and asked. It also reported that
-  local `main` (`466eeeb`) was behind `origin/main` (`7c74fc2`, the recreated fixtures commit)
-  and that the discarded attempt's branch still existed. The owner copied `.handoff/` in,
-  deleted that branch and its worktree, and moved local `main` to `7c74fc2`. Second run passed:
-  `pwd` and `git rev-parse --show-toplevel` = the worktree; `git worktree list` = main checkout
-  and this worktree; origin = `https://github.com/cristiangirlea/classify-sessions.git`; clean
-  tree; HEAD = `7c74fc2` = `main` = `origin/main`; `.handoff/` holds `plan.md`, `KICKOFF.md`,
-  `pr0-draft/`.
-- Disclosure: before the owner's copy, the coordinator read `.handoff/KICKOFF.md` once from the
-  main checkout to learn the Step 0 rule, which itself forbids that; it was not repeated, and
-  `plan.md` was read only from the worktree copy.
+- Location: app-created worktree `<repo>/.claude/worktrees/session-a-kickoff-e3a8f5`; its root
+  is "the project folder" for every rule.
+- Git: one branch per PR from `origin/main`, squash-merged; `main` is never checked out here.
+- Disclosure: before the owner copied `.handoff/` into the worktree, the coordinator read
+  `.handoff/KICKOFF.md` once from the main checkout, which the kickoff forbids; not repeated,
+  and `plan.md` was read only from the worktree copy.
 
 ### Discarded first setup attempt (19:41 to 20:00), carried over from its own notes
 
 Not re-verified by this session unless re-run below. Model and effort as the owner reported
 them then: `claude-opus-5-5` at high effort, "chosen for PR0 because it writes the contract and
-steering files that every later step depends on". It ran in another app-created worktree on
-branch `pr0-scaffold`, opened a single draft PR at 19:55 and was ready for approval at 20:00.
-Its notes disclosed two slips, both outside the worktree and removed within a minute: a dev
+steering files that every later step depends on". Its notes disclosed two slips, both outside the worktree and removed within a minute: a dev
 server log written one directory too high, and a temporary backup of a contract example in the
 system temp folder. It looked up Claude Code settings, agent, skill and hook syntax through the
 `claude-code-guide` subagent (prompt and answer summary in PROMPTS.md); those answers shaped the
@@ -97,9 +81,10 @@ taxonomy is not guaranteed.
 
 | Draft file(s) | In | Changed |
 | --- | --- | --- |
-| CLAUDE.md | PR0a | status line; each path and command marked with the PR that adds it; contract frozen "once PR0b is merged"; attribution and generated-file rules added |
+| CLAUDE.md | PR0a | attribution and generated-file rules added; describes the finished layout and commands (owner's document rules) |
 | AGENTS.md, `.cursor/rules/*.mdc` | PR0a | "after PR0" made precise (PR0b for the contract, PR0c for the scaffolds) |
-| README.md, SPEC.md, PLAN.md | PR0a | rewritten to the current state: no claim about code, contract or evidence files that do not exist yet; held-out labels and provenance moved to PR0b; ledger restarted for this session with the discarded 19 minutes counted; PR0 row split into PR0a to PR0c |
+| README.md | PR0a | finished layout and commands, one line on what is not built yet; final text in PR4 |
+| SPEC.md, PLAN.md | PR0a | no claim about code that does not exist yet; held-out labels and provenance moved to PR0b; ledger restarted with the discarded 19 minutes counted; PR0 row split into PR0a to PR0c |
 | NOTES.md, PROMPTS.md | PR0a | this session's entries added; the discarded attempt's entries kept, labelled as carried over |
 | `.claude/agents/*.md` | PR0a | unchanged |
 | `.claude/settings.json` | PR0a | `attribution` block added |
@@ -123,13 +108,13 @@ taxonomy is not guaranteed.
 
 | When | Tool | What | Outcome |
 | --- | --- | --- | --- |
-| Discarded attempt, 19:41 to 19:51 | `claude-code-guide` subagent (docs lookup, not a worker) | settings keys, agent and skill frontmatter, rule syntax, hook exit codes | applied in the draft and reused here; **unverified** beyond the docs answer |
+| Discarded attempt | `claude-code-guide` subagent (docs lookup, not a worker) | settings keys, agent and skill frontmatter, rule syntax, hook exit codes | applied in the draft and reused here; **unverified** beyond the docs answer |
 | PR0b | one-off Node script in the session's scratch folder (not in the repository) | validates the three examples against their schemas (draft-07 subset: type, required, closed objects, enum, `$ref` across files, min/max, pattern), checks every object schema is closed with every key required, recomputes every derived number in the examples, compares the labels with the kickoff block | found AI was wrong #2; after the fix all checks pass. The durable checks are PR0c's `TestExamplesDecodeStrictly` and `contract:check` |
 | PR0a | `/privacy-scan`, `/review-step`, `/corpus-check` | the skills are added by PR0a itself and load only in a session started after it is merged | their SKILL.md steps were run by hand; the privacy scan is the same script the skill runs |
 
 ## Evidence
 
-### PR0a checks (2026-10-09, run by hand at 21:20)
+### PR0a checks (2026-10-09, run by hand)
 
 | Check | Command | Result | Level |
 | --- | --- | --- | --- |
@@ -144,21 +129,7 @@ taxonomy is not guaranteed.
 | Bash guard hook, three sample payloads | JSON piped to `node .claude/hooks/guard-bash.mjs` | `go test ./...` exit 0; a read under the Claude projects directory exit 2; `ls .claude/worktrees` exit 0 | command output (not yet observed firing inside Claude Code) |
 | Whitespace and line endings | `git diff --check`; `file` on every changed file | clean; no CRLF | command output |
 
-### Review PR0a (2026-10-09 21:25, `/review-step` steps run by hand)
-
-Blocking: none.
-Non-blocking: 1. Session A's effort and the reason for the model choice await the owner's
-`/model` readout. 2. The three skills cannot be invoked in this session (they load at session
-start); their steps were run by hand. 3. `.claude/hooks/guard-bash.mjs` is not named in the
-kickoff's PR0a list; it is included because `.claude/settings.json` (which is) calls it.
-Commands: `git diff --name-only main` → 22 paths, all coordinator-owned (documents, `.claude/`,
-`.cursor/`, root config); `contract/` and `fixtures/` unchanged; no test named for PR0a in
-PLAN.md; backend and frontend suites not applicable (directories do not exist); privacy scan
-`0 hit(s)`; PROMPTS.md has the setup section; PLAN.md ledger row for PR0a stamped at start;
-document numbers (34, 1107, 0/0/0) trace to the commands above, planning numbers in SPEC.md
-are labelled unverified with the test that will confirm them.
-
-### PR0b checks (2026-10-09, run by hand between 21:34 and 21:37)
+### PR0b checks (2026-10-09, run by hand)
 
 | Check | Command | Result | Level |
 | --- | --- | --- | --- |
@@ -169,19 +140,12 @@ are labelled unverified with the test that will confirm them.
 | Labels equal the kickoff block | same script | `labels: identical to the kickoff block (10/10)` | command output |
 | Validator catches errors | `error.json` temporarily given an extra key and a bad `code` | `error.error: extra extra`, `error.error.code: pattern`; restored, exit 0 | command output |
 
-### Review PR0b (2026-10-09 21:37, `/review-step` steps run by hand)
+### Reviews (`/review-step` steps run by hand; the skills load only in a later session)
 
-Blocking: none.
-Non-blocking: 1. The contract consistency check is a one-off scratch script, not in the
-repository; PR0c's `TestExamplesDecodeStrictly` and `npm run contract:check` are the durable
-checks, and they test shape, not arithmetic. 2. Skills still not invocable in this session.
-Commands: `git diff --cached --name-only` → 14 paths: `contract/**` and
-`fixtures/labels/heldout.json` (PR0b's own additions; allowed in PR0b) plus documents; no path
-under `fixtures/claude-code/`, `fixtures/otel/`, `backend/` or `frontend/`; no test named for
-PR0b in PLAN.md; backend and frontend suites not applicable; privacy scan `30 files scanned, 34
-first-prompt fingerprints, 0 hit(s)`; `git ls-files .handoff` → 0; `git diff --cached --check`
-clean; PROMPTS.md entry 5 added; PLAN.md ledger row for PR0b stamped at start; the checks
-above pass.
+| PR | Blocking | Non-blocking | Checks |
+| --- | --- | --- | --- |
+| PR0a | none | `.claude/hooks/guard-bash.mjs` is not in the kickoff's PR0a list; included because `.claude/settings.json` calls it | 22 paths, all coordinator-owned; `contract/` and `fixtures/` unchanged; suites not applicable (no code); privacy scan 0 hits; document numbers trace to the PR0a checks; SPEC planning numbers labelled unverified |
+| PR0b | none | the example consistency check is a one-off scratch script; the durable drift tests (PR0c) check shape, not arithmetic | paths: `contract/**`, `fixtures/labels/heldout.json` and documents only; no fixture data, `backend/` or `frontend/` path; suites not applicable; privacy scan 0 hits; `.handoff/` untracked; `git diff --check` clean |
 
 ## Decisions taken in setup
 
@@ -190,6 +154,8 @@ above pass.
 | Setup in three PRs: documents and steering (PR0a), contract and labels (PR0b), scaffolds (PR0c) | owner's decision after discarding the single 49-file PR: each step reviewable on its own |
 | MIT licence (owner agreed in the discarded attempt) | conventional default for a take-home repository |
 | No `Co-Authored-By` trailer or PR footer; authorship documented in NOTES.md and PROMPTS.md | owner's instruction (kickoff and chat) |
+| CLAUDE.md and README.md describe the finished layout and commands, without status paragraphs or PR markers; README keeps one "not built yet" line and gets its final text in PR4; CLAUDE.md changes only when a rule or command changes | owner's document rules |
+| NOTES.md holds checks, decisions and the AI-was-wrong table; PLAN.md's ledger holds start, ready and minutes per PR | owner's document rules |
 | Generated files marked `linguist-generated`, generated line counts stated per PR | reviewers can see how much of a diff is hand-written |
 | Bash guard hook parses the hook JSON and tests only `tool_input.command` | the payload always contains a transcript path under the user's Claude directory; grepping stdin would block every command |
 | First-prompt extraction for the privacy scan lives in `.claude/skills/privacy-scan/first-prompts.mjs` (Node, repo-local) | the Go parser does not exist in setup; the scan needs the fingerprints at run time |

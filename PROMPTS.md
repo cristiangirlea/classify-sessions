@@ -47,6 +47,20 @@ approved. Model and effort: claude-opus-5-5 at high effort, chosen for setup bec
 these files shape every later step. Merge PR0a and continue with PR0b.
 ```
 
+### 6. Owner → coordinator, after PR0b was ready (21:38), not stamped
+
+```text
+Not yet. Before I approve PR0b, add one more commit on the same branch that applies these
+document rules, then re-run the privacy scan and tell me:
+- CLAUDE.md and README.md describe the finished layout and commands with no Status
+  paragraph and no PR markers. README keeps one line saying what is not built yet, and
+  gets its final text in PR4. CLAUDE.md changes only when a rule or a command changes.
+- NOTES.md keeps checks, decisions and the AI-was-wrong table. Git and branch mechanics
+  get one line at most; no narration of review time.
+- PLAN.md ledger: start, ready and minutes per PR, nothing else in the notes column.
+Then stop and ask for approval again.
+```
+
 ## Discarded first setup attempt (19:41 to 20:00), carried over verbatim from its PROMPTS.md
 
 ### D1. Owner → coordinator, before T0, not stamped
