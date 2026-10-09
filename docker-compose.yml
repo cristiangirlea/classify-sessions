@@ -1,0 +1,27 @@
+# Page and API on http://127.0.0.1:8088. The API has no published port and no route out:
+# it sits only on an internal network, and reads the fixtures through a read-only mount.
+name: classify-sessions
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    volumes:
+      - ./fixtures:/data:ro
+    read_only: true
+    networks: [internal]
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    ports:
+      - "127.0.0.1:8088:80"
+    depends_on: [backend]
+    networks: [internal, edge]
+
+networks:
+  internal:
+    internal: true
+  edge: {}

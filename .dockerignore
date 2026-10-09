@@ -1,0 +1,10 @@
+# Build context is the repository root; send only what the two images need.
+*
+!backend
+!frontend
+!contract
+!docker
+frontend/node_modules
+frontend/dist
+backend/sessions
+backend/sessions.exe

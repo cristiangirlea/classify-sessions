@@ -20,8 +20,11 @@ import (
 	"github.com/cristiangirlea/classify-sessions/backend/internal/contract"
 )
 
-// SummaryPath is the one route served in PR2. /api/models arrives in PR3.
-const SummaryPath = "/api/summary"
+// Routes. /api/models serves the summary's model_choice object, byte for byte.
+const (
+	SummaryPath = "/api/summary"
+	ModelsPath  = "/api/models"
+)
 
 // Allow is the Allow header of a 405 response.
 const Allow = "GET, HEAD"
@@ -36,16 +39,20 @@ var SecurityHeaders = map[string]string{
 }
 
 type handler struct {
-	summary []byte
+	routes map[string][]byte
 }
 
-// New returns the API handler. The summary is marshalled once, here.
+// New returns the API handler. Both bodies are marshalled once, here.
 func New(s contract.SummaryResponse) (http.Handler, error) {
-	b, err := json.Marshal(s)
+	sb, err := json.Marshal(s)
 	if err != nil {
 		return nil, err
 	}
-	return &handler{summary: b}, nil
+	mb, err := json.Marshal(s.ModelChoice)
+	if err != nil {
+		return nil, err
+	}
+	return &handler{routes: map[string][]byte{SummaryPath: sb, ModelsPath: mb}}, nil
 }
 
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -75,11 +82,12 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, http.StatusMethodNotAllowed, "method_not_allowed", "only GET and HEAD are allowed")
 		return
 	}
-	if r.URL.Path != SummaryPath {
+	body, ok := h.routes[r.URL.Path]
+	if !ok {
 		writeError(w, r, http.StatusNotFound, "not_found", "no such path")
 		return
 	}
-	writeJSON(w, r, http.StatusOK, h.summary)
+	writeJSON(w, r, http.StatusOK, body)
 }
 
 func writeJSON(w http.ResponseWriter, r *http.Request, status int, body []byte) {

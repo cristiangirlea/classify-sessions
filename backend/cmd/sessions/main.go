@@ -3,7 +3,7 @@
 //	sessions summary    --input DIR [--labels FILE]       SummaryResponse JSON on stdout
 //	sessions evaluate   --input DIR --labels FILE         classifier.heldout JSON on stdout
 //	sessions serve      --input DIR [--labels FILE] [--listen ADDR] [--bind-any]
-//	                                                      GET /api/summary on loopback
+//	                                                      GET /api/summary and /api/models on loopback
 //	sessions prompts    --input DIR --exclude-labels FILE first prompts of unlabelled sessions, stdout only
 //	sessions crosscheck --input DIR --otel FILE           text reconciliation with an OTel export
 //	sessions version
@@ -232,7 +232,7 @@ func cmdServe(args []string, stderr io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("listen: %w", err)
 	}
-	fmt.Fprintf(stderr, "sessions serve: %s on %s (Ctrl+C to stop)\n", httpapi.SummaryPath, ln.Addr())
+	fmt.Fprintf(stderr, "sessions serve: %s and %s on %s (Ctrl+C to stop)\n", httpapi.SummaryPath, httpapi.ModelsPath, ln.Addr())
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 	return httpapi.Serve(ctx, ln, h)
