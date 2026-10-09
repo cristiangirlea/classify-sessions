@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -116,6 +117,40 @@ func TestHTTPBoundary(t *testing.T) {
 		checkSecurityHeaders(t, w.Header())
 	})
 
+	t.Run("GET and HEAD models", func(t *testing.T) {
+		w := do(h, req{method: "GET", path: ModelsPath, host: host})
+		if w.Code != 200 || w.Header().Get("Content-Type") != "application/json" {
+			t.Fatalf("status %d content type %q", w.Code, w.Header().Get("Content-Type"))
+		}
+		var full struct {
+			ModelChoice json.RawMessage `json:"model_choice"`
+		}
+		if err := json.Unmarshal(want, &full); err != nil {
+			t.Fatal(err)
+		}
+		if !bytes.Equal(w.Body.Bytes(), full.ModelChoice) {
+			t.Error("/api/models body differs from the summary's model_choice")
+		}
+		dec := json.NewDecoder(bytes.NewReader(w.Body.Bytes()))
+		dec.DisallowUnknownFields()
+		var m contract.ModelsResponse
+		if err := dec.Decode(&m); err != nil {
+			t.Errorf("models body does not decode strictly: %v", err)
+		}
+		checkSecurityHeaders(t, w.Header())
+		checkNoPromptText(t, res, w.Body.String())
+
+		hw := do(h, req{method: "HEAD", path: ModelsPath, host: host})
+		if hw.Code != 200 || hw.Body.Len() != 0 || hw.Header().Get("Content-Length") != itoa(w.Body.Len()) {
+			t.Errorf("HEAD: status %d, body %d bytes, length %q", hw.Code, hw.Body.Len(), hw.Header().Get("Content-Length"))
+		}
+		checkSecurityHeaders(t, hw.Header())
+
+		if fw := do(h, req{method: "GET", path: ModelsPath, host: "example.test"}); fw.Code != 403 {
+			t.Errorf("foreign host: status %d", fw.Code)
+		}
+	})
+
 	t.Run("loopback hosts and same-origin requests are allowed", func(t *testing.T) {
 		for i, q := range []req{
 			{method: "GET", path: SummaryPath, host: "localhost:5173"},
@@ -133,7 +168,7 @@ func TestHTTPBoundary(t *testing.T) {
 	})
 
 	t.Run("404", func(t *testing.T) {
-		for _, p := range []string{"/", "/api", "/api/summary/", "/api/models", "/api/unknown", "/index.html"} {
+		for _, p := range []string{"/", "/api", "/api/summary/", "/api/models/", "/api/model", "/api/unknown", "/index.html"} {
 			w := do(h, req{method: "GET", path: p, host: host})
 			if w.Code != 404 {
 				t.Errorf("%s: status %d, want 404", p, w.Code)
@@ -150,7 +185,7 @@ func TestHTTPBoundary(t *testing.T) {
 
 	t.Run("405", func(t *testing.T) {
 		for _, m := range []string{"POST", "PUT", "PATCH", "DELETE", "OPTIONS", "TRACE"} {
-			for _, p := range []string{SummaryPath, "/nope"} {
+			for _, p := range []string{SummaryPath, ModelsPath, "/nope"} {
 				w := do(h, req{method: m, path: p, host: host})
 				if w.Code != 405 || w.Header().Get("Allow") != "GET, HEAD" {
 					t.Errorf("%s %s: status %d Allow %q, want 405 and GET, HEAD", m, p, w.Code, w.Header().Get("Allow"))
@@ -212,6 +247,55 @@ func TestHTTPBoundary(t *testing.T) {
 		}
 		checkSecurityHeaders(t, resp.Header)
 	})
+}
+
+// TestLiveModelsMatchesContract decodes the live /api/models body strictly and compares its
+// recursive key set with contract/examples/models.json.
+func TestLiveModelsMatchesContract(t *testing.T) {
+	res, err := ingest.Dir(corpusDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h, err := New(summary.Build(res, summary.Options{Input: "../fixtures/claude-code"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := do(h, req{method: "GET", path: ModelsPath, host: "127.0.0.1:8080"})
+	if w.Code != 200 {
+		t.Fatalf("status %d", w.Code)
+	}
+	dec := json.NewDecoder(bytes.NewReader(w.Body.Bytes()))
+	dec.DisallowUnknownFields()
+	var strict contract.ModelsResponse
+	if err := dec.Decode(&strict); err != nil {
+		t.Fatalf("strict decode: %v", err)
+	}
+	example, err := os.ReadFile(filepath.Join("..", "..", "..", "contract", "examples", "models.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var liveAny, exAny any
+	if err := json.Unmarshal(w.Body.Bytes(), &liveAny); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(example, &exAny); err != nil {
+		t.Fatal(err)
+	}
+	live, ex := strings.Join(contract.KeySet(liveAny), "\n"), strings.Join(contract.KeySet(exAny), "\n")
+	if live != ex {
+		t.Errorf("key sets differ\nexample:\n%s\n\nlive:\n%s", ex, live)
+	}
+	var exStrict contract.ModelsResponse
+	if err := json.Unmarshal(example, &exStrict); err != nil {
+		t.Fatal(err)
+	}
+	if strict.Definitions != exStrict.Definitions {
+		t.Error("definitions differ from the contract example")
+	}
+	verdicts := map[string]bool{"insufficient_evidence": true, "no_premium_benefit_observed": true, "fewer_corrections_at_premium": true, "no_comparison_possible": true}
+	if !verdicts[strict.Advice.Verdict] {
+		t.Errorf("verdict %q is not in the contract enum", strict.Advice.Verdict)
+	}
 }
 
 func itoa(n int) string {

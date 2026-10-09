@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getSummary } from './api/client';
 import type { SummaryResponse } from './api/contract.gen';
 import { Coverage } from './views/Coverage';
+import { ModelChoice } from './views/ModelChoice';
 import { Purpose } from './views/Purpose';
 import { Sessions } from './views/Sessions';
 import { Spend } from './views/Spend';
@@ -37,6 +38,7 @@ export function Report({ summary }: { summary: SummaryResponse }) {
       <Spend summary={summary} />
       <Coverage summary={summary} />
       <Sessions summary={summary} />
+      <ModelChoice choice={summary.model_choice} />
     </main>
   );
 }

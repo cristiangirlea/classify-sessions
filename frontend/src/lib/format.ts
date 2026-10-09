@@ -41,3 +41,30 @@ export function formatDate(iso: string | null): string {
 export function formatRule(rule: string | null): string {
   return rule === null ? 'no rule matched' : rule;
 }
+
+/** "n · complete c/n · mixed m · [1m] l" for a model-choice cell. */
+export function formatSessionsCell(c: {
+  sessions: number;
+  complete_cost_sessions: number;
+  mixed_model_sessions: number;
+  long_context_sessions: number;
+}): string {
+  return `${c.sessions} · complete ${c.complete_cost_sessions}/${c.sessions} · mixed ${c.mixed_model_sessions} · [1m] ${c.long_context_sessions}`;
+}
+
+/** "x/N (rate)": a count over its base, then the rate; a null rate is "not measured", never 0. */
+export function formatCountRate(numerator: number, base: number, rate: number | null): string {
+  return `${numerator}/${base} (${formatPercent(rate)})`;
+}
+
+/** A cost ratio such as "5.1x"; null is "not measured". */
+export function formatTimes(value: number | null): string {
+  if (value === null) return NOT_MEASURED;
+  return `${value.toFixed(1)}x`;
+}
+
+/** The badges a model-choice category carries: "not comparable", or "thin" when comparable but unsupported. */
+export function categoryBadges(c: { comparable: boolean; supported: boolean }): string[] {
+  if (!c.comparable) return ['not comparable'];
+  return c.supported ? [] : ['thin'];
+}

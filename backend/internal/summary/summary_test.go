@@ -281,12 +281,9 @@ func TestInputHint(t *testing.T) {
 }
 
 // emptyArrayPaths are key-set prefixes skipped by TestLiveSummaryMatchesContract because the
-// array is empty on one side, so its item keys cannot be compared. PR3 (model choice) removes
-// the remaining entries as the arrays fill; the test fails while an entry is stale.
-var emptyArrayPaths = []string{
-	".model_choice.categories[]",   // PR3: placeholder
-	".model_choice.model_totals[]", // PR3: placeholder
-}
+// array is empty on one side, so its item keys cannot be compared. Empty since PR3; the test
+// fails if an entry is added while the array is populated on both sides.
+var emptyArrayPaths = []string{}
 
 // liveDisagreementID is a dev session (not held out) whose rules-v1 prediction is debug via
 // debug.why-does; the test labels it research so the live heldout object has a disagreement.

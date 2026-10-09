@@ -346,6 +346,71 @@ One more PR2 item, frontend/ only, same rules (no git this time). Port 8080 on t
 
 B11 to B15 were copied by hand from the calls that sent them.
 
+### PR3
+
+#### B16. Owner → coordinator, PR2 approval and PR3 instruction
+
+```text
+approved. Merge PR2 and start PR3. In PR3, while the workers build the model-choice
+analysis and its panel, write the Dockerfiles and docker-compose.yml yourself and verify
+them with compose up and curl, so PR4 is documents only.
+```
+
+The coordinator wrote the Dockerfiles under `docker/` at the root rather than in `backend/` and
+`frontend/` (the plan's paths), because AGENTS.md forbids the coordinator to edit those
+directories after PR0c (NOTES.md, PR3 decisions).
+
+#### B17. Coordinator → go-worker, PR3 (the PR2 go-worker resumed)
+
+```text
+PR3 (model-choice analysis), go-worker task list. PR2 is merged; branch pr3-model-choice is checked out from it. Same rules as before: backend/ only, no git or gh, never open fixtures/labels/heldout.json or files quoting its labels (.handoff/KICKOFF.md, PROMPTS.md, .handoff/pr0-draft/), no prompt text in any output, test name or message. The classifier is frozen: do not change backend/internal/classify; if you think a rule is wrong, report it instead.
+
+Start your report with the exact model id you are running as.
+
+Read .handoff/plan.md section "Model-choice analysis (the extra), designed against the real corpus" in full: its definitions (dominant model, comparable and supported category, cost per session, correction message with the exact opener and phrase patterns, correction rate, tool failure rate), the ModelsResponse shape, the advice rules and caveats, and the Go outline. Use those definitions verbatim in `definitions{}`, matching contract/examples/models.json where the example already has the text.
+
+Build, standard library only, gofmt clean, minimum scope first (cells with sessions, mean cost, corrections, user messages, correction rate, comparable; advice with the insufficient_evidence branch), then median, tool failure rate, mixed and long-context counts, complete-cost counts, model_totals, excluded_sessions:
+
+1. internal/modelchoice: CountCorrections, DominantModel, ComputeSignals, CompareModels, advise, as in the plan's Go outline; use pricing.CanonicalModel and the exported rate table. Categories come from the frozen rules-v1 classification. Cells sorted by taxonomy category order then model; session ids only. Advice statement from a deterministic fmt.Sprintf template; caveats generated conditionally as the plan lists.
+2. Embed the result as `model_choice` in the summary (replacing the PR1 placeholder) and serve it at GET /api/models (same boundary rules as /api/summary; marshalled once at startup). The /api/models body must equal the summary's model_choice.
+3. Remove `.model_choice.categories[]` and `.model_choice.model_totals[]` from emptyArrayPaths in TestLiveSummaryMatchesContract; add a strict-decode and key-set test of live /api/models against contract/examples/models.json.
+
+Tests (names from PLAN.md), each passing: TestCorrectionRateIsCorrectionsOverUserMessages (2 of 4), TestCorrectionRulesIgnoreNewTaskPromptsAndApprovals (the six correction templates match; "wrong total", "regression test", "tests pass" do not; marshalled signals carry no prompt text), TestDominantModelAttributesMixedSessionToMajority (3 Sonnet + 1 Haiku → Sonnet, mixed; [1m] folds into its family and is counted; no assistant record → excluded), TestSingleModelCategoryReportedNotCompared, TestIncompleteCostCountedSeparately, TestAdviceDeterministicAndVerdictThresholds (byte-identical twice; 9 vs 10 pooled sessions flips the verdict; empty input → no_comparison_possible), TestCompareModelsSuppliedCorpus. Extend TestHTTPBoundary for /api/models: GET and HEAD 200, 405, 404 elsewhere, no prompt text. Invented test prompts only (the privacy scan fails on corpus first-prompt text).
+
+Planning facts for the corpus, unverified in this repository and computed before rules-v1 existed: Opus 4.1 dominant in 12 sessions with mean known USD 2.386, Sonnet 4.5 in 18 with mean 0.471, Sonnet 5 in 4; 27 correction messages in 8 sessions; 59 tool failures of 414 known results; 6 comparable categories; verdict insufficient_evidence. Assert what the code measures; where it differs from a planning fact, report the measured value and the reason (the comparable-category count may differ because categories now come from rules-v1). Never shape code to hit a number.
+
+The coordinator runs Docker in parallel: compose will start `serve --input /data/claude-code --labels /data/labels/heldout.json --listen 0.0.0.0:8080 --bind-any` in a container behind nginx, which sends `Host: 127.0.0.1:8080`. Change nothing for that unless it cannot work; if so, report why.
+
+Run from backend/ and quote exact result lines: gofmt -l ., go vet ./..., go test ./... -count=1, and `go run ./cmd/sessions summary --input ../fixtures/claude-code` piped to a script that prints only: records, spend.total_usd, model_choice.models, each category's comparable/supported and per-cell model, sessions, mean_known_usd, correction_messages/user_messages, tool_failures/tool_results_known, model_totals the same way, excluded_sessions count, advice.verdict, advice.cost_ratio, advice.statement and caveats. Do not pass the real labels file to anything.
+
+Report: model id; files touched; each command with its exact result line; each named test and pass/fail; the measured corpus values against each planning fact; what you did not do; contract questions.
+```
+
+#### B18. Coordinator → react-worker, PR3 (the same react-worker resumed; sent in the same message as B17)
+
+```text
+PR3 (model-choice analysis), react-worker task list. PR2 is merged; branch pr3-model-choice is checked out from it. Same rules as before: frontend/ only, no git or gh, never open fixtures/, types only from src/api/contract.gen.ts, no chart library, web font, icon set, CDN tag or external URL, all data as text, no dangerouslySetInnerHTML, no package beyond the lock file. The backend is being extended in parallel: build against `npm run dev:mock` (contract/examples/models.json and the model_choice embedded in summary.json).
+
+Start your report with the exact model id you are running as.
+
+Read .handoff/plan.md sections "Model-choice analysis (the extra), designed against the real corpus" (the "Panel" paragraph) and "Frontend design", and contract/models.schema.json.
+
+Build src/views/ModelChoice.tsx and add it as the fifth panel in Report (App.tsx), rendering summary.model_choice (no second request needed; getModels() stays available):
+- a header with the definitions strip (the seven definitions, as text);
+- one table grouped by category, with badges `not comparable` (comparable false) and `thin` (comparable but not supported) and the reason; columns: model; sessions as `n · complete c/n · mixed m · [1m] l`; mean and median known cost (lower-bound wording when complete_cost_sessions < sessions); correction rate as `x/N` with the rate, secondary `s/n` corrected sessions; tool failure rate as `f/k` with the rate, and unknown outcomes when non-zero; null rates render "not measured";
+- model_totals as a separate small table in the same columns;
+- excluded sessions (count and ids);
+- the advice: statement paragraph, verdict as a text badge, cost ratio (null → "not measured"), shared categories, caveats as a list, and the static sentence: "This fixture is synthetic: its prompts are templated, so correction counts describe the generator, not real developers.";
+- loading, error and empty states as text (no categories → "No sessions to compare.").
+Wrap tables in the existing `table-scroll` wrapper.
+
+Tests: extend test/App.test.tsx (static render) to assert the panel renders the example's verdict, the statement, a `not comparable` badge, a correction rate as `x/N`, and the synthetic-fixture sentence; add any formatter you need to src/lib/format.ts with a test in test/format.test.ts.
+
+Run from frontend/ and quote exact result lines: `npm ci`, `npm test` (includes contract:check), `npm run typecheck`, `npm run build`. Report: model id; files touched; each command with its exact result line; each test and pass/fail; what you did not do; contract questions.
+```
+
+B16 to B18: B17 and B18 were copied by hand from the calls that sent them.
+
 ## Discarded first setup attempt, carried over verbatim from its PROMPTS.md
 
 ### D1. Owner → coordinator, before Step 0

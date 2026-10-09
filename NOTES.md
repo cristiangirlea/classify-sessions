@@ -433,6 +433,27 @@ entry `frontend-live-8081` (`npm run dev` with `API_PROXY_TARGET=http://127.0.0.
 Non-blocking: the page's hint names 8080 and the `serve` command without `--labels`; both are
 the documented defaults, and README gets its final text in PR4.
 
+### PR3 worker reports and coordinator verification
+
+**react-worker** (reported model id `claude-sonnet-5-5`; resumed, B18). Summary of its report:
+new `src/views/ModelChoice.tsx`, the fifth panel, rendered from `summary.model_choice` (no
+second request): models present, "Descriptive only: no causal claim", the seven definitions,
+one category-grouped table with `not comparable` and `thin` badges and the reason, cells as
+`n · complete c/n · mixed m · [1m] l`, mean and median known cost with lower-bound wording,
+correction rate `x/N (rate)` with corrected sessions, tool failure rate `f/k (rate)` and unknown
+outcomes when non-zero, null rates "not measured"; a totals-by-model table; excluded sessions;
+the advice (statement, verdict badge, cost ratio, shared categories, caveats, the
+synthetic-fixture sentence, pricing source and date); "No sessions to compare." when empty.
+Formatters added to `format.ts`; `.badge` and `.reason` styles. Tests: 9 panel tests in
+`App.test.tsx` (the `thin` badge, a cost ratio and excluded ids only through a modified copy of
+the example) and 4 formatter tests. No git command this round. Not done: browser and live
+checks.
+
+| Check | Command | Result | Level |
+| --- | --- | --- | --- |
+| Frontend chain (coordinator rerun) | `npm test && npm run typecheck && npm run build` | `contract.gen.ts matches contract/`; `Test Files 4 passed (4)`, `Tests 44 passed (44)`; typecheck no output; built | unit-tested |
+| Panel rules | `grep` of `ModelChoice.tsx` for `table-scroll`, `dangerouslySetInnerHTML`, `http(s)://` | 2 wrappers; neither of the others | command output |
+
 ### Reviews (`/review-step` steps run by hand; the skills load only in a later session)
 
 | PR | Blocking | Non-blocking | Checks |

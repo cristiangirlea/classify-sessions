@@ -1,6 +1,6 @@
 // Package summary builds the contract SummaryResponse from ingested sessions. Sessions are
 // classified by rules-v1 (package classify); classifier.heldout comes from a labels file when
-// one is given. model_choice is a schema-valid placeholder that PR3 replaces.
+// one is given. model_choice is the model-choice analysis (package modelchoice).
 package summary
 
 import (
@@ -16,6 +16,7 @@ import (
 	"github.com/cristiangirlea/classify-sessions/backend/internal/evaluate"
 	"github.com/cristiangirlea/classify-sessions/backend/internal/ingest"
 	"github.com/cristiangirlea/classify-sessions/backend/internal/model"
+	"github.com/cristiangirlea/classify-sessions/backend/internal/modelchoice"
 	"github.com/cristiangirlea/classify-sessions/backend/internal/pricing"
 )
 
@@ -133,7 +134,7 @@ func Build(res *ingest.Result, opt Options) contract.SummaryResponse {
 		},
 		SessionList:    []contract.SessionRow{},
 		ExampleRequest: ExampleRequest,
-		ModelChoice:    PlaceholderModelChoice(),
+		ModelChoice:    modelchoice.CompareModels(res.Sessions),
 	}
 
 	var total pricing.Components
@@ -266,31 +267,4 @@ func Build(res *ingest.Result, opt Options) contract.SummaryResponse {
 		out.Spend.ByModel = append(out.Spend.ByModel, ms)
 	}
 	return out
-}
-
-// PlaceholderModelChoice is the schema-valid model_choice emitted until PR3 computes it.
-func PlaceholderModelChoice() contract.ModelsResponse {
-	return contract.ModelsResponse{
-		Models:           []string{},
-		Categories:       []contract.ModelCategory{},
-		ModelTotals:      []contract.ModelCell{},
-		ExcludedSessions: []string{},
-		Advice: contract.ModelAdvice{
-			SharedCategories: []string{},
-			Verdict:          "no_comparison_possible",
-			Statement:        "Model-choice analysis is not computed in this build.",
-			Caveats:          []string{},
-		},
-		Definitions: contract.ModelDefinitions{
-			DominantModel:      "Canonical model family (date suffix and [1m] stripped) with the most assistant records after dedupe; ties broken by known USD, then name. The whole session is attributed to it.",
-			ComparableCategory: "A non-unknown category where at least two models have a session.",
-			SupportedCategory:  "A comparable category with at least three sessions per model; only supported categories inform the advice.",
-			CostPerSession:     "Known USD at dated public rates; a lower bound when the session's cost is incomplete.",
-			CorrectionMessage:  "A genuine user message, after the first, that matches the anchored opener or phrase rules, case-insensitive.",
-			CorrectionRate:     "Correction messages divided by genuine user messages, pooled per cell.",
-			ToolFailureRate:    "Failed results divided by known results, first result per tool-call id in chronological order.",
-		},
-		PricingSource: pricing.SourceURL,
-		PricingDate:   pricing.AsOf,
-	}
 }

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   NOT_MEASURED,
+  categoryBadges,
+  formatCountRate,
+  formatSessionsCell,
+  formatTimes,
   formatCount,
   formatDate,
   formatPercent,
@@ -57,5 +61,28 @@ describe('format', () => {
   it('renders a missing rule as a statement, not an empty cell', () => {
     expect(formatRule(null)).toBe('no rule matched');
     expect(formatRule('debug.why-does')).toBe('debug.why-does');
+  });
+
+  it('formats the sessions cell of the model-choice table', () => {
+    expect(
+      formatSessionsCell({ sessions: 5, complete_cost_sessions: 4, mixed_model_sessions: 1, long_context_sessions: 2 }),
+    ).toBe('5 · complete 4/5 · mixed 1 · [1m] 2');
+  });
+
+  it('formats a count over its base with the rate, and a null rate as not measured', () => {
+    expect(formatCountRate(1, 3, 1 / 3)).toBe('1/3 (33.3%)');
+    expect(formatCountRate(0, 0, null)).toBe('0/0 (not measured)');
+    expect(formatCountRate(0, 4, 0)).toBe('0/4 (0.0%)');
+  });
+
+  it('formats a cost ratio, null as not measured', () => {
+    expect(formatTimes(5.123)).toBe('5.1x');
+    expect(formatTimes(null)).toBe('not measured');
+  });
+
+  it('badges non-comparable and thin categories only', () => {
+    expect(categoryBadges({ comparable: false, supported: false })).toEqual(['not comparable']);
+    expect(categoryBadges({ comparable: true, supported: false })).toEqual(['thin']);
+    expect(categoryBadges({ comparable: true, supported: true })).toEqual([]);
   });
 });
