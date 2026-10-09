@@ -1,0 +1,10 @@
+node_modules/
+frontend/dist/
+backend/sessions
+backend/sessions.exe
+*.exe
+.env
+.env.*
+.DS_Store
+Thumbs.db
+.claude/worktrees/
