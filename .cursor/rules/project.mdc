@@ -1,0 +1,13 @@
+---
+description: Project-wide rules for the classify-sessions repository
+alwaysApply: true
+---
+Cursor was not used to build this repository; these rules mirror CLAUDE.md and AGENTS.md for parity.
+
+- Read CLAUDE.md (commands, barriers, definition of done) and AGENTS.md (ownership, frozen contract).
+- Synthetic fixtures only; never read `~/.claude`, `~/.codex`, Cursor User data or anything outside the repository.
+- No prompt text, absolute paths or usernames in output, tests, docs or commits; session ids and rule ids only.
+- `contract/` is frozen once PR0b is merged; `fixtures/claude-code/`, `fixtures/otel/`, `fixtures/claude-code.sha256` are never edited.
+- `fixtures/labels/heldout.json` is never read while writing or tuning classifier rules.
+- Backend: `cd backend && go vet ./... && go test ./... -count=1`. Frontend: `cd frontend && npm ci && npm run contract:check && npm run typecheck && npm test && npm run build`.
+- Every number in a document comes from `evidence/` via the corpus-check skill.
