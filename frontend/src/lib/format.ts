@@ -63,6 +63,29 @@ export function formatTimes(value: number | null): string {
   return `${value.toFixed(1)}x`;
 }
 
+/** A known amount with two decimals and no unit, for tables; null is "not measured". */
+export function formatAmount(value: number | null): string {
+  if (value === null) return NOT_MEASURED;
+  return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/** A fraction as a whole-number percentage, for legends. */
+export function formatPercentWhole(fraction: number | null): string {
+  if (fraction === null) return NOT_MEASURED;
+  return `${Math.round(fraction * 100)}%`;
+}
+
+/** A fraction as a percentage with two decimals, for small unparsed shares. */
+export function formatPercentFine(fraction: number | null): string {
+  if (fraction === null) return NOT_MEASURED;
+  return `${(fraction * 100).toFixed(2)}%`;
+}
+
+/** "1 record" / "2 records". */
+export function plural(n: number, one: string, many: string = `${one}s`): string {
+  return `${formatCount(n)} ${n === 1 ? one : many}`;
+}
+
 /** The badges a model-choice category carries: "not comparable", or "thin" when comparable but unsupported. */
 export function categoryBadges(c: { comparable: boolean; supported: boolean }): string[] {
   if (!c.comparable) return ['not comparable'];

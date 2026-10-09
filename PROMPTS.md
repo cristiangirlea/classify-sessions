@@ -459,6 +459,49 @@ and stop for my approval.
 
 No worker was launched in PR4: the Docker check broke nothing in `backend/` or `frontend/`.
 
+### PR5
+
+#### B21. Another Claude session ("Take-home assignment setup") → coordinator, relaying an owner instruction
+
+```text
+Owner instruction, relayed from the planning session: start PR4 now, documents plus three tasks.
+
+1. Run /corpus-check so evidence/ reflects the merged code; the model-choice section of evidence/summary.json still holds the PR1 placeholder.
+2. Run docker compose build and docker compose up -d, curl http://127.0.0.1:8088/api/summary and /api/models, open the page on 8088 in the browser, then compose down. Record the results in NOTES.md as docker-checked. Fix only what the check breaks.
+3. For the react-worker, in parallel with the documents: restyle the page to match .handoff/design/index.html exactly (the owner approved this mockup). Same structure, order, copy, colours, type scale and spacing; the stacked spend bar and legend as the hero; the category table with inline share bars; badges for incomplete, base rate, sidechain, thin and not comparable; the advice box with verdict badge and caveats. Bind every value to the live API as now; nothing hard-coded from the mockup. No new library, no external font or asset, tests untouched and passing. Verify in the browser at desktop and phone widths, no console errors, privacy scan clean.
+
+Then write the final documents: README (how to run it three ways, what works, what does not), SPEC (format findings and model-choice entries from the evidence, the advice statement quoted verbatim), NOTES (where AI helped, where it was wrong, what another day would add), PROMPTS complete. Run /review-step and /privacy-scan, open the draft PR and stop for the owner's approval.
+```
+
+It arrived after PR4 was already open. Tasks 1 and 2 and the documents were done; task 3 was
+new and came from another session, not from the owner in this chat, so the coordinator did not
+act on it and asked the owner.
+
+#### B22. Owner's answer to the coordinator's question (**paraphrase**: picked from options)
+
+- "Did you approve this restyle, and where should it go?" → "Yes, as a separate PR5": approve
+  and merge PR4 as it is (documents only), then the restyle in its own draft PR.
+
+#### B23. Coordinator → react-worker, PR5 (the same react-worker resumed)
+
+```text
+PR5 (page restyle), react-worker task. PR4 is merged; branch pr5-page-restyle is checked out from it. Same rules as before: frontend/ only, no git or gh, never open fixtures/, types only from src/api/contract.gen.ts, no new package, no chart library, web font, icon set, CDN tag or external URL, all data as text, no dangerouslySetInnerHTML.
+
+Start your report with the exact model id you are running as.
+
+The owner approved a mockup: read .handoff/design/index.html (the one file you may read under .handoff/). Restyle the page to match it: same section structure and order (summary hero, purpose, money, coverage, models), same copy, colours, type scale, spacing and the 760px breakpoint; the stacked spend bar and its legend as the hero; the category table with inline share bars and a total row; the by-model and by-component tables side by side; the two coverage tables; the model table grouped by category with badges (cost incomplete, base rate, sidechain, thin, not comparable); the advice box with the verdict badge and the caveats list. Put the mockup's CSS in src/styles.css (system font stack only, as in the mockup).
+
+Rules that win over "exactly", in this order:
+1. Every value is bound to the API (summary and summary.model_choice), as now. Nothing from the mockup is hard-coded: not the numbers, not the counts in the headline and lede ("34", "17 of 34", "1 record in 1,107": compute them; say "half" only if it is exactly half), not the category order (sort by known cost from the data), not the colours' assignment (by rank), not the badges (derive them from flags, cost completeness, comparable and supported). The mockup's row "test, research, refactor … Same pattern: Opus costs four to ten times more per session; corrections and failures do not move with the model." is an editorial claim, not data: render every category from the data instead, and do not copy that sentence.
+2. Tests stay untouched and passing. Where an existing test asserts text or structure the mockup drops (for example the synthetic-fixture sentence, the seven definitions, "Agreement fraction", the `table-scroll` wrappers, the lower-bound wording, the error state), keep that content, styled to fit the mockup, and list each such deviation in your report.
+3. Keep the loading and error states, the lower-bound wording wherever a cost is incomplete, and "not measured" for nulls.
+The mockup has no Sessions table: follow the mockup (drop it) unless a test needs it, and say which you did.
+
+Run from frontend/ and quote exact result lines: `npm test` (includes contract:check), `npm run typecheck`, `npm run build`. Then start `npm run dev:mock` and check it yourself only by curl that it serves; the coordinator does the browser check at desktop and phone widths against the live API. Report: model id; files touched; commands with result lines; tests (all must be the existing ones, untouched); every deviation from the mockup and why; what you did not do; contract questions.
+```
+
+B23 was copied by hand from the call that sent it.
+
 ## Discarded first setup attempt, carried over verbatim from its PROMPTS.md
 
 ### D1. Owner → coordinator, before Step 0
