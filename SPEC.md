@@ -6,9 +6,9 @@ corpus shows and which decisions were taken. Who edits which file is in AGENTS.m
 Evidence levels used below: **unit-tested**, **live-HTTP-checked**, **browser-checked**,
 **docker-checked**, **owner-confirmed**, **unverified**.
 
-Status (PR0a): no code, contract or scaffold exists yet. Everything below about the backend,
-the frontend, the contract and the endpoints is the **design** from the approved plan, not a
-description of running code. Most corpus facts are **unverified in this repository**: they come
+Status (PR0b): the contract (`contract/`) and the held-out labels exist; no code or scaffold
+exists yet. Everything below about the backend, the frontend and the endpoints is the
+**design** from the approved plan, not a description of running code. Most corpus facts are **unverified in this repository**: they come
 from the read-only planning check and are confirmed or corrected by the PR1 tests named beside
 them.
 
@@ -27,12 +27,17 @@ for no match. One category per session, from its first genuine prompt (rules in 
 
 ## Held-out evaluation set
 
-Ten sessions, selected as the first ten of every third sorted session id from index 2. Their
-labels and the statement of where the labels came from are added in PR0b as
-`fixtures/labels/heldout.json`, before any classifier rule exists. Rules are written from the
-taxonomy and the other 24 sessions only; the held-out run happens once, at the end of PR2.
+Ten sessions, labelled in `fixtures/labels/heldout.json` (PR0b), before any classifier rule
+exists. Provenance, in the same words as the file and NOTES.md:
 
-## Data flow and contract (design; contract in PR0b, code from PR1)
+> AI-proposed by the planning session (claude-opus-5-5) from the first prompt only, before any rule existed in this repository; the owner accepted all ten unchanged. Not hand-labelled. Selection: the first ten of every third sorted session id from index 2.
+
+Rules are written from the taxonomy and the other 24 sessions only; the held-out run happens
+once, at the end of PR2. Read the agreement figure accordingly: it measures agreement with an
+AI reading of the same first prompt, not with a human judgement (**owner-confirmed**
+provenance).
+
+## Data flow and contract (contract exists; code from PR1)
 
 ```text
 fixtures/claude-code/**/*.jsonl ──► backend: ingest ► pricing ► classify ► summary ► httpapi
@@ -44,8 +49,7 @@ contract/*.schema.json (frozen) ◄── drift tests on both sides ──► fr
 
 - `GET /api/summary` → `SummaryResponse`; `GET /api/models` → `ModelsResponse` (also embedded in
   the summary as `model_choice`). GET and HEAD only; other methods 405 with `Allow`; unknown
-  paths 404; every error is `{"error":{"code","message"}}`. Schemas and examples: `contract/`
-  (PR0b).
+  paths 404; every error is `{"error":{"code","message"}}`. Schemas and examples: `contract/`.
 - The backend listens on 127.0.0.1:8080; the page on 127.0.0.1:5173 proxies `/api` there. No CORS.
 - The summary is computed once at startup. It carries session ids and rule ids, never prompt
   text, absolute paths or usernames.
@@ -95,7 +99,7 @@ Descriptive, not causal. For each category with sessions from two or more models
 mean and median known cost per session, correction-message rate and tool-failure rate per
 dominant model, then give a deterministic verdict (`insufficient_evidence`,
 `no_premium_benefit_observed`, `fewer_corrections_at_premium`, `no_comparison_possible`). The
-definitions will be in `contract/examples/models.json` → `definitions` (PR0b) and stated
+definitions are in `contract/examples/models.json` → `definitions` and will be stated
 verbatim by the endpoint (PR3). Planning expects the verdict on this corpus to be `insufficient_evidence`
 (**unverified**; written up in PR3 only after reading the endpoint's output).
 
