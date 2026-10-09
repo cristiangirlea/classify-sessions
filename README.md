@@ -37,7 +37,7 @@ Checks: `node .claude/skills/privacy-scan/scan.mjs` (privacy scan);
 only boundary) · `fixtures/` synthetic data and held-out labels · `evidence/` regenerated
 outputs · `.claude/` agents, skills, settings · `.cursor/rules/` (written, unused).
 
-Documents: [SPEC.md](SPEC.md) (what and why) · [PLAN.md](PLAN.md) (steps and ledger) ·
+Documents: [SPEC.md](SPEC.md) (what and why) · [PLAN.md](PLAN.md) (PR sequence and cut order) ·
 [NOTES.md](NOTES.md) (evidence, tool use, what went wrong) · [PROMPTS.md](PROMPTS.md) (every
 prompt verbatim) · [CLAUDE.md](CLAUDE.md) and [AGENTS.md](AGENTS.md) (AI steering).
 
