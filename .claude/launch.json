@@ -6,6 +6,13 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev:mock", "--prefix", "frontend"],
       "port": 5173
+    },
+    {
+      "name": "frontend-live-8081",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "frontend"],
+      "env": { "API_PROXY_TARGET": "http://127.0.0.1:8081" },
+      "port": 5173
     }
   ]
 }

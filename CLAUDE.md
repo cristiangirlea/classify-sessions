@@ -27,8 +27,8 @@ only, no code).
 ```bash
 # backend (from backend/)
 go vet ./... && go test ./... -count=1
-go run ./cmd/sessions summary --input ../fixtures/claude-code
-go run ./cmd/sessions serve --input ../fixtures/claude-code          # 127.0.0.1:8080
+go run ./cmd/sessions summary --input ../fixtures/claude-code --labels ../fixtures/labels/heldout.json
+go run ./cmd/sessions serve --input ../fixtures/claude-code --labels ../fixtures/labels/heldout.json   # 127.0.0.1:8080; --listen to change
 go run ./cmd/sessions evaluate --input ../fixtures/claude-code --labels ../fixtures/labels/heldout.json
 go run ./cmd/sessions prompts --input ../fixtures/claude-code --exclude-labels ../fixtures/labels/heldout.json
 go run ./cmd/sessions crosscheck --input ../fixtures/claude-code --otel ../fixtures/otel/claude-code-events.jsonl
@@ -36,7 +36,7 @@ go run ./cmd/sessions crosscheck --input ../fixtures/claude-code --otel ../fixtu
 # frontend (from frontend/)
 npm ci && npm run contract:check && npm run typecheck && npm test && npm run build
 npm run dev:mock      # serves contract/examples at /api/*, no backend needed
-npm run dev           # proxies /api to 127.0.0.1:8080
+npm run dev           # proxies /api to 127.0.0.1:8080; API_PROXY_TARGET=http://127.0.0.1:<port> overrides (loopback only)
 
 # docker (from the root)
 docker compose build && docker compose up -d     # page and API on 127.0.0.1:8088

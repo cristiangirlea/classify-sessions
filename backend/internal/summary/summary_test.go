@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/cristiangirlea/classify-sessions/backend/internal/contract"
+	"github.com/cristiangirlea/classify-sessions/backend/internal/evaluate"
 	"github.com/cristiangirlea/classify-sessions/backend/internal/ingest"
 	"github.com/cristiangirlea/classify-sessions/backend/internal/pricing"
 )
@@ -149,16 +150,18 @@ func TestUsageBilledOncePerRecord(t *testing.T) {
 
 func TestSyntheticSessionCosts(t *testing.T) {
 	s := build(t, synthDir, "../fixtures/synthetic")
+	// Categories and rules are rules-v1 on the synthetic prompts (PR1 had every session unknown).
 	want := map[string]struct {
-		usd      float64
-		complete bool
+		usd            float64
+		complete       bool
+		category, rule string
 	}{
-		"5ea00000-0000-4000-8000-000000000001": {0.00345, false},
-		"5ea00000-0000-4000-8000-000000000002": {0.0018, false},
-		"5ea00000-0000-4000-8000-000000000003": {0.0018, false},
-		"5ea00000-0000-4000-8000-000000000004": {0.0036, true},
-		"5ea00000-0000-4000-8000-000000000005": {0.0054, true},
-		"5ea00000-0000-4000-8000-000000000006": {0.0735, false},
+		"5ea00000-0000-4000-8000-000000000001": {0.00345, false, "debug", "debug.fix"},
+		"5ea00000-0000-4000-8000-000000000002": {0.0018, false, "review", "review.review"},
+		"5ea00000-0000-4000-8000-000000000003": {0.0018, false, "implement", "implement.add"},
+		"5ea00000-0000-4000-8000-000000000004": {0.0036, true, "refactor", "refactor.refactor"},
+		"5ea00000-0000-4000-8000-000000000005": {0.0054, true, "test", "test.write-tests"},
+		"5ea00000-0000-4000-8000-000000000006": {0.0735, false, "research", "research.explain"},
 	}
 	if len(s.SessionList) != len(want) {
 		t.Fatalf("sessions = %d", len(s.SessionList))
@@ -168,8 +171,8 @@ func TestSyntheticSessionCosts(t *testing.T) {
 		if !within(r.CostUSD, w.usd, 1e-12) || r.CostComplete != w.complete {
 			t.Errorf("%s: usd %v complete %v, want %v %v", r.ID, r.CostUSD, r.CostComplete, w.usd, w.complete)
 		}
-		if r.Category != "unknown" || r.Rule != nil {
-			t.Errorf("%s: category %s rule %v, want unknown and null", r.ID, r.Category, r.Rule)
+		if r.Category != w.category || r.Rule == nil || *r.Rule != w.rule {
+			t.Errorf("%s: category %s rule %v, want %s %s", r.ID, r.Category, r.Rule, w.category, w.rule)
 		}
 	}
 	if !within(s.Spend.TotalUSD, 0.08955, 1e-12) || s.Spend.IncompleteSessions != 4 {
@@ -194,8 +197,66 @@ func TestSyntheticSessionCosts(t *testing.T) {
 			t.Errorf("%s flags %q, want %q", m, flags[m], f)
 		}
 	}
-	if s.Records.Total != 34 || s.Sessions.Total != 6 || len(s.Categories) != 1 || s.Categories[0].Records != 34 {
-		t.Errorf("records %d sessions %d categories %+v", s.Records.Total, s.Sessions.Total, s.Categories)
+	if s.Records.Total != 34 || s.Sessions.Total != 6 || s.Sessions.Classified != 6 || len(s.Categories) != 6 {
+		t.Errorf("records %d sessions %+v categories %+v", s.Records.Total, s.Sessions, s.Categories)
+	}
+	order := []string{}
+	records := 0
+	for _, c := range s.Categories {
+		order = append(order, c.Category)
+		records += c.Records
+	}
+	if strings.Join(order, ",") != "debug,implement,refactor,test,review,research" || records != 34 {
+		t.Errorf("categories %v with %d records, want taxonomy order and 34", order, records)
+	}
+}
+
+// TestCategoriesPartitionSessions checks that categories partition the corpus: every session,
+// record and known dollar lands in exactly one category, in taxonomy order.
+func TestCategoriesPartitionSessions(t *testing.T) {
+	s := build(t, corpusDir, "../fixtures/claude-code")
+	if s.Classifier.Method != "rules-v1" {
+		t.Errorf("method %q", s.Classifier.Method)
+	}
+	sessions, records, incomplete, cost := 0, 0, 0, 0.0
+	rank := map[string]int{}
+	for i, c := range Taxonomy {
+		rank[c] = i
+	}
+	prev := -1
+	for _, c := range s.Categories {
+		if c.Sessions == 0 || rank[c.Category] <= prev {
+			t.Errorf("category %s empty or out of taxonomy order", c.Category)
+		}
+		prev = rank[c.Category]
+		if !within(sumComponents(c.Components), c.CostUSD, 1e-6) {
+			t.Errorf("%s: components do not add up", c.Category)
+		}
+		sessions += c.Sessions
+		records += c.Records
+		incomplete += c.CostIncompleteSessions
+		cost += c.CostUSD
+	}
+	if sessions != 34 || records != 1107 || incomplete != s.Spend.IncompleteSessions || !within(cost, s.Spend.TotalUSD, 1e-6) {
+		t.Errorf("categories sum to %d sessions, %d records, %d incomplete, %v USD", sessions, records, incomplete, cost)
+	}
+	unclassifiedRecords := 0
+	for _, r := range s.SessionList {
+		if (r.Category == "unknown") != (r.Rule == nil) {
+			t.Errorf("%s: category %s with rule %v", r.ID, r.Category, r.Rule)
+		}
+		if r.Category == "unknown" {
+			unclassifiedRecords += r.Records
+		}
+	}
+	ss := s.Sessions
+	if ss.Classified+ss.Unclassified != ss.Total ||
+		!within(ss.UnclassifiedFractionSessions, float64(ss.Unclassified)/float64(ss.Total), 1e-12) ||
+		!within(ss.UnclassifiedFractionRecords, float64(unclassifiedRecords)/1107, 1e-12) {
+		t.Errorf("sessions %+v, unclassified records %d", ss, unclassifiedRecords)
+	}
+	if h := s.Classifier.Heldout; h.Labelled != 0 || h.AgreementFraction != nil || h.Disagreements == nil || len(h.Disagreements) != 0 {
+		t.Errorf("without a labels file heldout must be empty, got %+v", h)
 	}
 }
 
@@ -220,16 +281,38 @@ func TestInputHint(t *testing.T) {
 }
 
 // emptyArrayPaths are key-set prefixes skipped by TestLiveSummaryMatchesContract because the
-// array is empty on one side, so its item keys cannot be compared. PR2 (classifier) and PR3
-// (model choice) remove entries as the arrays fill; the test fails while an entry is stale.
+// array is empty on one side, so its item keys cannot be compared. PR3 (model choice) removes
+// the remaining entries as the arrays fill; the test fails while an entry is stale.
 var emptyArrayPaths = []string{
-	".classifier.heldout.disagreements[]", // PR2: empty until the held-out evaluation runs
-	".model_choice.categories[]",          // PR3: placeholder
-	".model_choice.model_totals[]",        // PR3: placeholder
+	".model_choice.categories[]",   // PR3: placeholder
+	".model_choice.model_totals[]", // PR3: placeholder
 }
 
+// liveDisagreementID is a dev session (not held out) whose rules-v1 prediction is debug via
+// debug.why-does; the test labels it research so the live heldout object has a disagreement.
+const liveDisagreementID = "3888cf6f-f20f-4113-9752-143c54690953"
+
 func TestLiveSummaryMatchesContract(t *testing.T) {
-	live := build(t, corpusDir, "../fixtures/claude-code")
+	res, err := ingest.Dir(corpusDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	labelsPath := filepath.Join(t.TempDir(), "labels.json")
+	if err := os.WriteFile(labelsPath, []byte(`{"labels":[{"session_id":"`+liveDisagreementID+`","category":"research"}]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	labels, err := evaluate.Load(labelsPath, evaluate.SessionIDs(res.Sessions))
+	if err != nil {
+		t.Fatal(err)
+	}
+	live := Build(res, Options{Input: "../fixtures/claude-code", GeneratedAt: time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC), Labels: labels})
+	h := live.Classifier.Heldout
+	if h.Labelled != 1 || h.Agreements != 0 || h.AgreementFraction == nil || *h.AgreementFraction != 0 || len(h.Disagreements) != 1 {
+		t.Fatalf("heldout %+v, want one labelled session that disagrees", h)
+	}
+	if d := h.Disagreements[0]; d.SessionID != liveDisagreementID || d.Labelled != "research" || d.Predicted != "debug" || d.Rule == nil || *d.Rule != "debug.why-does" {
+		t.Errorf("disagreement %+v", d)
+	}
 	raw, err := json.Marshal(live)
 	if err != nil {
 		t.Fatal(err)

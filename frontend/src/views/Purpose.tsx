@@ -15,24 +15,26 @@ export function Purpose({ summary }: { summary: SummaryResponse }) {
       {categories.length === 0 ? (
         <p>No categories: no sessions were found.</p>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Category</th>
-              <th className="num">Sessions</th>
-              <th className="num">Records</th>
-            </tr>
-          </thead>
-          <tbody>
-            {categories.map((c) => (
-              <tr key={c.category}>
-                <td>{c.category}</td>
-                <td className="num">{formatCount(c.sessions)}</td>
-                <td className="num">{formatCount(c.records)}</td>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th className="num">Sessions</th>
+                <th className="num">Records</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {categories.map((c) => (
+                <tr key={c.category}>
+                  <td>{c.category}</td>
+                  <td className="num">{formatCount(c.sessions)}</td>
+                  <td className="num">{formatCount(c.records)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       <h3>Held-out check</h3>
@@ -49,26 +51,28 @@ export function Purpose({ summary }: { summary: SummaryResponse }) {
       {heldout.disagreements.length === 0 ? (
         <p>No disagreements.</p>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Session</th>
-              <th>Labelled</th>
-              <th>Predicted</th>
-              <th>Rule</th>
-            </tr>
-          </thead>
-          <tbody>
-            {heldout.disagreements.map((d) => (
-              <tr key={d.session_id}>
-                <td className="mono">{d.session_id}</td>
-                <td>{d.labelled}</td>
-                <td>{d.predicted}</td>
-                <td>{formatRule(d.rule)}</td>
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Session</th>
+                <th>Labelled</th>
+                <th>Predicted</th>
+                <th>Rule</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {heldout.disagreements.map((d) => (
+                <tr key={d.session_id}>
+                  <td className="mono">{d.session_id}</td>
+                  <td>{d.labelled}</td>
+                  <td>{d.predicted}</td>
+                  <td>{formatRule(d.rule)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </section>
   );

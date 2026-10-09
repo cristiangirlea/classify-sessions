@@ -16,36 +16,38 @@ export function Coverage({ summary }: { summary: SummaryResponse }) {
         <p>No records were found.</p>
       ) : (
         <>
-          <table>
-            <thead>
-              <tr>
-                <th>Outcome</th>
-                <th className="num">Records</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Total (nonblank)</td>
-                <td className="num">{formatCount(records.total)}</td>
-              </tr>
-              <tr>
-                <td>Parsed</td>
-                <td className="num">{formatCount(records.parsed)}</td>
-              </tr>
-              <tr>
-                <td>Malformed</td>
-                <td className="num">{formatCount(records.malformed)}</td>
-              </tr>
-              <tr>
-                <td>Unknown</td>
-                <td className="num">{formatCount(records.unknown)}</td>
-              </tr>
-              <tr>
-                <td>Duplicate</td>
-                <td className="num">{formatCount(records.duplicate)}</td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Outcome</th>
+                  <th className="num">Records</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Total (nonblank)</td>
+                  <td className="num">{formatCount(records.total)}</td>
+                </tr>
+                <tr>
+                  <td>Parsed</td>
+                  <td className="num">{formatCount(records.parsed)}</td>
+                </tr>
+                <tr>
+                  <td>Malformed</td>
+                  <td className="num">{formatCount(records.malformed)}</td>
+                </tr>
+                <tr>
+                  <td>Unknown</td>
+                  <td className="num">{formatCount(records.unknown)}</td>
+                </tr>
+                <tr>
+                  <td>Duplicate</td>
+                  <td className="num">{formatCount(records.duplicate)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
           <p>Each nonblank record is counted exactly once: total = parsed + malformed + unknown + duplicate.</p>
         </>
       )}
@@ -59,32 +61,34 @@ export function Coverage({ summary }: { summary: SummaryResponse }) {
       <p>Records in unclassified sessions: {formatPercent(sessions.unclassified_fraction_records)}.</p>
 
       <h3>Diagnostics</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Diagnostic</th>
-            <th className="num">Records</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Missing usage</td>
-            <td className="num">{formatCount(d.missing_usage)}</td>
-          </tr>
-          <tr>
-            <td>Missing timestamp</td>
-            <td className="num">{formatCount(d.missing_timestamp)}</td>
-          </tr>
-          <tr>
-            <td>Missing cache fields</td>
-            <td className="num">{formatCount(d.missing_cache_fields)}</td>
-          </tr>
-          <tr>
-            <td>Sidechain</td>
-            <td className="num">{formatCount(d.sidechain)}</td>
-          </tr>
-        </tbody>
-      </table>
+      <div className="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Diagnostic</th>
+              <th className="num">Records</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Missing usage</td>
+              <td className="num">{formatCount(d.missing_usage)}</td>
+            </tr>
+            <tr>
+              <td>Missing timestamp</td>
+              <td className="num">{formatCount(d.missing_timestamp)}</td>
+            </tr>
+            <tr>
+              <td>Missing cache fields</td>
+              <td className="num">{formatCount(d.missing_cache_fields)}</td>
+            </tr>
+            <tr>
+              <td>Sidechain</td>
+              <td className="num">{formatCount(d.sidechain)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

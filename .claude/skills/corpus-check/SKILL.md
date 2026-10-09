@@ -20,7 +20,8 @@ Steps, from the repository root (skip a step whose subcommand does not exist yet
    `<system-reminder>`, `<command-` and `"isMeta"` across the same files with `grep -c` and
    write the three counts to `evidence/tags.txt`.
 2. `cd backend && go vet ./... && go test ./... -count=1`; keep the `ok`/`FAIL` lines.
-3. `go run ./cmd/sessions summary --input ../fixtures/claude-code > ../evidence/summary.json`
+3. `go run ./cmd/sessions summary --input ../fixtures/claude-code --labels ../fixtures/labels/heldout.json > ../evidence/summary.json`
+   (the held-out result in it is recomputed from the frozen rules; it is not a tuning signal)
 4. `go run ./cmd/sessions evaluate --input ../fixtures/claude-code --labels ../fixtures/labels/heldout.json > ../evidence/evaluation.json`
 5. If `fixtures/otel/claude-code-events.jsonl` exists:
    `go run ./cmd/sessions crosscheck --input ../fixtures/claude-code --otel ../fixtures/otel/claude-code-events.jsonl > ../evidence/crosscheck.txt`

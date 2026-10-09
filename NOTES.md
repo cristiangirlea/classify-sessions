@@ -48,8 +48,8 @@ assistance. Authorship is documented here (sessions, models, tool use) and in PR
 
 ### Session B (PR1 to PR4)
 
-- Model: `claude-opus-5-5` (the session's own model id). Effort as `/model` shows it: **not
-  yet recorded**; the coordinator cannot run `/model` and has asked the owner to read it.
+- Model and effort, as the owner read them from `/model`: `claude-opus-5-5` at medium effort.
+- Why (owner): PR1 onward is coordination and verification.
 - Location: app-created worktree `<repo>/.claude/worktrees/session-b-kickoff-da09c2`, branch
   fast-forwarded to `main` by the owner before PR1; one branch per PR from `main`.
 - `/agents`: `go-worker` and `react-worker` were listed among the session's agent types.
@@ -141,6 +141,9 @@ taxonomy is not guaranteed.
 | PR1 | `go-worker` and `react-worker` subagents, launched in one message | PR1 task lists (PROMPTS.md B5, B6) | both reported; claims rerun by the coordinator (Evidence, PR1) |
 | PR1 | `/corpus-check`, `/privacy-scan`, `/review-step` (loaded as skills in Session B) | evidence regeneration, scan, review | blocks and results under Evidence, PR1 |
 | PR1 | built-in browser preview (`.claude/launch.json`, `frontend-mock`) | page on `dev:mock` | browser-checked (mock) |
+| PR2 | `go-worker` (fresh) and `react-worker` launched in one message; react-worker resumed twice | PROMPTS.md B11 to B15 | both reported; claims rerun by the coordinator (Evidence, PR2) |
+| PR2 | plan mode (one turn) | the coordinator's plan for finishing PR2, approved by the owner | the plan file could not be written under the user's Claude folder (denied by settings) |
+| PR2 | `/corpus-check`, `/review-step`, `/privacy-scan`; built-in browser (`frontend-live-8081`); curl script | evidence, review, scan, live checks | results under Evidence, PR2 |
 
 ## Evidence
 
@@ -276,12 +279,167 @@ field, so by-model cost is labelled "known" and the flags show where it is parti
 | Page on `dev:mock` | built-in browser via `.claude/launch.json` (`frontend-mock`); page text, console, network | four views and the header render the example (40 records, "at least USD 1.4130 (lower bound, cost incomplete)", 1 disagreement); console has only Vite and React DevTools messages; every request to `localhost:5173` | browser-checked (mock) |
 | Observation | same | a horizontal scrollbar at the pane's width (wide Sessions table); non-blocking, for PR2 | browser-checked (mock) |
 
+### PR2 worker reports and coordinator verification
+
+**react-worker** (reported model id `claude-sonnet-5-5`; launched B12, resumed B13 after it had
+ended mid-edit without a report). Summary of its report: `App.tsx` exports `ErrorState` (one
+`role="alert"` line with the API error's code, message and HTTP status, plus the hint to run
+`serve` on 127.0.0.1:8080; one request per load, no retry), `Report` and `App`; every table in
+the four views is wrapped in `div.table-scroll` (`overflow-x: auto` in `styles.css`); the `test`
+script is `npm run contract:check && vitest run`; new `test/App.test.tsx` renders with
+`react-dom/server` (no new package, no jsdom) and asserts the records total, the lower-bound
+spend wording, the agreement fraction, the table wrappers and the error line. Vite proxy
+already correct, unchanged. Rule slip it reported itself: it ran `git diff --stat` once (workers
+never run git); read-only. Its no-backend dev-server check was not clean: port 8080 was already
+taken (below), and the proxy returned that process's plain-text 404. After the owner chose
+another port (B14), it added `API_PROXY_TARGET` (B15): default `http://127.0.0.1:8080`, only
+`http://127.0.0.1:<port>` or `http://localhost:<port>` accepted, anything else fails at config
+load; not `VITE_`-prefixed, so it never reaches the client bundle. With nothing on 8081 the
+proxy answered `500`, which the error state shows as an HTTP 500 line. It removed a temporary
+log file it had created in `frontend/`.
+
+| Check | Command | Result | Level |
+| --- | --- | --- | --- |
+| Frontend chain (coordinator rerun) | `npm test && npm run typecheck && npm run build` | `contract.gen.ts matches contract/` inside `npm test`; `Test Files 3 passed (3)`, `Tests 28 passed (28)`; typecheck no output; built | unit-tested |
+| Every table wrapped | `grep -c` of `className="table-scroll"` and `<table` per view | 2/2, 2/2, 1/1, 3/3 | command output |
+| Proxy override (B15): `src/lib/proxyTarget.ts`, `vite.config.ts`, `test/proxyTarget.test.ts` | `npm test`; `API_PROXY_TARGET=http://example.com npm run build` | `Test Files 4 passed (4)`, `Tests 31 passed (31)`; bad target: `API_PROXY_TARGET must be http://127.0.0.1:<port> or http://localhost:<port> …`, exit 1 | unit-tested + command output |
+| Port 8080 already in use | `netstat -ano` and `tasklist` | `0.0.0.0:8080` and `[::]:8080` held by `com.docker.backend.exe` (a Docker container's published port, not this repository's); the coordinator did not stop it | command output |
+
+**go-worker** (reported model id `claude-opus-5-5`; a fresh worker, not the PR1 one, launched
+B11). Held-out statement, its words summarised: it never saw a held-out label or a held-out
+session's prompt; it did not open the labels file, `.handoff/KICKOFF.md`, `PROMPTS.md`,
+`.handoff/pr0-draft/` or the NOTES labels section, and read no corpus session file; the real
+labels file went only to `prompts --exclude-labels` (twice). Disclosed: the corpus category
+totals minus its 24 dev rows reveal the rules' aggregate *predictions* for the ten held-out
+sessions (not labels). Built: `internal/classify` (rules-v1, 25 ordered rules: plan, review,
+debug for "why" questions and pasted error text, research, refactor, ops, test, debug for fix
+verbs and symptoms, implement; first match wins; the code has 24 rules, see "AI was wrong" #3), `internal/evaluate` (labels validation:
+`labels` present, ids and categories present, categories in the taxonomy, no repeated id, every
+id in the input; error messages name no path), `internal/httpapi` (check order loopback Host →
+Origin → `Sec-Fetch-Site` → method → route; the five headers on every response; summary
+marshalled once), and `evaluate`, `summary [--labels]`, `serve [--labels] [--listen]
+[--bind-any]` (version 0.2.0). Tests: `TestClassifyRulesTableDriven` (all 25 rules, invented
+prompts), `TestEvaluateLoadsLabelsAndReportsDisagreements` (temporary labels over
+`fixtures/synthetic`, 9 validation errors), `TestHTTPBoundary`, `TestLiveSummaryMatchesContract`
+tightened (`heldout.disagreements[]` no longer skipped; a temporary label on dev session
+`3888cf6f`), plus five extra tests; two PR1 tests updated for categories. Process disclosures:
+plan mode began mid-run and it tried to write a plan file under the user's Claude folder,
+refused by the deny rule; one hung read-only background shell command; a scratch helper with no
+prompt text left in its scratch folder. Contract notes, none blocking: `--bind-any` without
+`--listen` listens on `0.0.0.0:8080` (Host check stays loopback); a HEAD error has no body; 403
+is checked before 405 before 404.
+
+Dev-set table (24 sessions; ids, predicted category and rule only; the worker's own reading
+matched every prediction):
+
+| Session | Category | Rule |
+| --- | --- | --- |
+| `097c85cb` | refactor | `refactor.restructure` |
+| `0d3e6c7c` | implement | `implement.add` |
+| `29392198` | review | `review.review` |
+| `2be89086` | test | `test.coverage` |
+| `3888cf6f` | debug | `debug.why-does` |
+| `3ad56625` | test | `test.write-tests` |
+| `4d0b0354` | plan | `plan.before-code` |
+| `50a315a7` | review | `review.find-breakage` |
+| `83faac57` | implement | `implement.build` |
+| `8cb1cc5e` | ops | `ops.ci-container` |
+| `9161e14f` | implement | `implement.build` |
+| `a207d841` | research | `research.how-does` |
+| `a8989c8d` | debug | `debug.error-message` |
+| `aa0ca19a` | plan | `plan.write-plan` |
+| `b722a3ee` | research | `research.how-does` |
+| `b7dab20e` | review | `review.ship-ready` |
+| `cb1e3b91` | ops | `ops.ci-container` |
+| `ced1a459` | test | `test.write-tests` |
+| `d1895bdb` | implement | `implement.build` |
+| `d5fa2206` | refactor | `refactor.refactor` |
+| `e23c779b` | refactor | `refactor.refactor` |
+| `f1c7ea43` | research | `research.how-does` |
+| `f91bef70` | review | `review.ship-ready` |
+| `faad242a` | test | `test.coverage` |
+
+Where the worker found the definitions hard to apply (its report, ids only): ops before test for
+CI work that names a test type (`8cb1cc5e`, `cb1e3b91`); a test-directory path is not a test noun
+(`9161e14f`, `d1895bdb`); restructuring a test file is refactor (`d5fa2206`); a readiness check on
+a test file is review (`b7dab20e`); a regression test for a fixed bug is test (`3ad56625`);
+"write a spec" is plan (`aa0ca19a`); adding a feature while keeping an API is implement
+(`0d3e6c7c`); "how does X handle" is research like "work" (`a207d841`, `b722a3ee`, `f1c7ea43`);
+pasted error text with no question is debug (`a8989c8d`). `unknown` is never reached on the
+corpus.
+
+| Check | Command | Result | Level |
+| --- | --- | --- | --- |
+| No held-out id in the classifier | `grep` of `backend/` for the ten held-out id prefixes | one hit, `ingest_test.go:143`: PR1's pin of the corpus's malformed line (a data fact, not a label) | command output |
+| Labels file read only through flags | `grep -rn heldout backend/` | only the contract field, the `evaluate` package and tests with temporary labels | command output |
+| Go suite (coordinator rerun) | `gofmt -l . && go vet ./... && go test ./... -count=1` | no gofmt output; `ok` for 9 packages, `internal/model` no test files | unit-tested |
+| Core numbers unchanged, no labels | `summary --input ../fixtures/claude-code` | `1107 = 1084 + 1 + 0 + 22`, USD `38.01359025`, `rules-v1`, heldout labelled 0; categories debug 4, implement 6, refactor 3, test 5, review 6, research 4, plan 3, ops 3; 0 null-rule rows | command output |
+| Rules frozen before the held-out run | `sha256sum backend/internal/classify/classify.go` | `dd1631f553f621c8e0e0ae3f00b0f36ed794a2d2aef73dff1acc5782d1281d5b` | command output |
+
+#### Held-out evaluation, run 1 (verbatim)
+
+Command, from `backend/`, run once by the coordinator after the hash above:
+`go run ./cmd/sessions evaluate --input ../fixtures/claude-code --labels ../fixtures/labels/heldout.json > ../evidence/evaluation.json` (exit 0). Output:
+
+```json
+{
+  "labelled": 10,
+  "agreements": 10,
+  "agreement_fraction": 1,
+  "disagreements": []
+}
+```
+
+How to read it: agreement with ten labels that a Claude model proposed from the same first
+prompts, judged by rules a Claude model wrote, on a synthetic dataset whose prompts are
+templated (dev and held-out prompts may share phrasing). It is a consistency check with one AI
+reading on ten sessions, not a measured accuracy; it shows no case where the rules are wrong,
+which ten sessions cannot rule out. Later runs (`/corpus-check`, `serve --labels`) recompute the
+same result from the frozen rules; any rule change after this run is logged here with before
+and after numbers.
+
+### Corpus check (PR2)
+
+- Manifest: 34/34 OK
+- Go tests: ok cmd/sessions; ok internal/classify; ok internal/contract; ok internal/crosscheck; ok internal/evaluate; ok internal/httpapi; ok internal/ingest; ok internal/pricing; ok internal/summary (internal/model: no test files)
+- Records: 1107 = 1084 parsed + 1 malformed + 0 unknown + 22 duplicate
+- Known spend: USD 38.01359025 (17 sessions incomplete)
+- Held-out: 10/10 (1); disagreements: none (recomputed from the frozen rules; `classifier.heldout` in `evidence/summary.json` equals `evidence/evaluation.json`)
+- Cross-check: oracle 41.119147; reconciliation residual +0.000000 (unchanged from PR1)
+- Evidence level: unit-tested (Go tests) + command output in evidence/
+
+Step 3 of the skill now passes `--labels` so `evidence/summary.json` carries the held-out
+result; the skill text loaded in this session predated that edit, and the updated step was run.
+
+### PR2 live checks
+
+The API ran as a binary built into the session's scratch folder: `serve --input
+../fixtures/claude-code --labels ../fixtures/labels/heldout.json --listen 127.0.0.1:8081` (port
+8080 is taken on this machine; owner's choice, B14). The page ran through `.claude/launch.json`
+entry `frontend-live-8081` (`npm run dev` with `API_PROXY_TARGET=http://127.0.0.1:8081`).
+
+| Check | Command | Result | Level |
+| --- | --- | --- | --- |
+| GET, HEAD `/api/summary` | curl script (scratch folder) | `200`, `200` | live-HTTP-checked |
+| Unknown path; `/api/models` | same | `404` `{"error":{"code":"not_found","message":"no such path"}}`; `/api/models` `404` (PR3) | live-HTTP-checked |
+| POST | same | `405` `{"error":{"code":"method_not_allowed","message":"only GET and HEAD are allowed"}}`, `Allow: GET, HEAD` | live-HTTP-checked |
+| `Host: evil.example`; foreign `Origin`; `Sec-Fetch-Site: cross-site` | same | `403` `{"error":{"code":"forbidden","message":"host must be a loopback address"}}`; `403`; `403` | live-HTTP-checked |
+| Security headers | same | `Cache-Control: no-store`, `Content-Security-Policy: default-src 'none'`, `Cross-Origin-Resource-Policy: same-origin`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff` | live-HTTP-checked |
+| Live body equals evidence | same, JSON compare without `generated_at` | `equal: true` against `evidence/summary.json` | live-HTTP-checked |
+| Page against the live API | built-in browser, page text, console, network | categories (debug 4, implement 6, refactor 3, test 5, review 6, research 4, plan 3, ops 3), held-out 10/10, "at least USD 38.0136 (lower bound, cost incomplete)", 17 incomplete, 1,107 records with the accounting line, diagnostics 10/12/59/2, pricing notes, 34 session rows; no console error; every request to `localhost:5173` | browser-checked |
+| Narrow width | viewport 375 px, `scrollWidth` in the page | page `375` wide, no sideways scroll; 3 of 7 rendered table wrappers scroll inside | browser-checked |
+| Error state | API stopped (`000` on 8081), page reloaded | "Could not load the summary: HTTP 500 from /api/summary with no readable error body. The API must be running on 127.0.0.1:8080: …" | browser-checked |
+
+Non-blocking: the page's hint names 8080 and the `serve` command without `--labels`; both are
+the documented defaults, and README gets its final text in PR4.
+
 ### Reviews (`/review-step` steps run by hand; the skills load only in a later session)
 
 | PR | Blocking | Non-blocking | Checks |
 | --- | --- | --- | --- |
 | PR0a | none | `.claude/hooks/guard-bash.mjs` is not in the kickoff's PR0a list; included because `.claude/settings.json` calls it | 22 paths, all coordinator-owned; `contract/` and `fixtures/` unchanged; suites not applicable (no code); privacy scan 0 hits; document numbers trace to the PR0a checks; SPEC planning numbers labelled unverified |
 | PR0c | none | `npm audit` findings in `vitest` (decision below); SPEC.md and README.md describe the finished system, so some sentences have no code behind them yet | backend and frontend chains pass locally; paths: `backend/**`, `frontend/**` and documents; contract and fixtures unchanged; privacy scan 0 hits |
+| PR2 (`/review-step`, run as a skill; base `origin/main`) | none | rule count 25 reported, 24 in code (AI was wrong #3); held-out 10/10 is a consistency check, not accuracy; go-worker saw aggregate held-out predictions (not labels); react-worker ran `git diff --stat` once; a hung read-only shell command from the go-worker's run; page hint names 8080 without `--labels`; `--bind-any` defaults to `0.0.0.0:8080`; live check on 8081 | 3 named PR2 tests present, `TestLiveSummaryMatchesContract` skips only the two PR3 paths; Go `ok` for 9 packages; frontend `Tests 31 passed (31)`, `contract.gen.ts matches contract/`, build ok; privacy scan 0 hits; `contract/` and `fixtures/` unchanged; no clock times; `git diff --check` clean |
 | PR1 (`/review-step`, run as a skill) | none | scanner allowance changed by the coordinator (decision in PR1 table); synthetic README names record timestamps (data, not work times); event model and `internal/crosscheck` differ from the plan outline; `input_hint` keeps `../`; `npm audit` findings unchanged; page scrolls sideways at a narrow width; worker model ids self-reported; Session B effort not yet recorded. Two gaps against the acceptance list (per-model components, the second out-of-order file and the duplicates' session) were closed by the B7 follow-up | 15 named tests present; Go `ok` for six packages; frontend chain green (23 tests); privacy scan 0 hits; `contract/`, corpus, OTel and labels unchanged |
 | PR0b | none | the example consistency check is a one-off scratch script; the durable drift tests (PR0c) check shape, not arithmetic | paths: `contract/**`, `fixtures/labels/heldout.json` and documents only; no fixture data, `backend/` or `frontend/` path; suites not applicable; privacy scan 0 hits; `.handoff/` untracked; `git diff --check` clean |
 
@@ -346,12 +504,26 @@ first prompt. The model-choice verdict waits for PR3.
 | `internal/crosscheck` added to the backend layout | the plan names the `crosscheck` command but no package for it |
 | Privacy scan: `ingest.go` and `model.go` may name `<system-reminder>` (that rule only); Go tests may use the invented drive-C `data` folder path (that prefix and the drive-path rule only) | the hits were the plan's defensive stripping code and a test of absolute `--input` handling, not leaks; user path, username, email, other drive paths and the tag elsewhere are still caught (planted-leak check above) |
 
+## Decisions taken in PR2
+
+| Decision | Why |
+| --- | --- |
+| SPEC decision 7: rules-v1, 24 ordered regular expressions on the lowercased first prompt, first match wins; category definitions written by the coordinator (the repository had none) | deterministic and explainable by rule id; written from the 24 dev sessions only |
+| SPEC decision 8: the labels file is read only through an explicit `--labels` (`summary`, `serve`, `evaluate`) or `--exclude-labels` (`prompts`); the held-out evaluation ran once after the rules' hash was recorded | `classifier.heldout` is part of the summary, so a summary built with labels *is* an evaluation; the flag makes the boundary checkable |
+| A fresh go-worker for PR2, told which files quote the labels | a resumed worker could carry earlier context into rule-writing; its report states it saw no label or held-out prompt |
+| SPEC decision 9: the HTTP boundary (loopback Host, same Origin, no cross-site fetch, GET and HEAD, closed error JSON, five headers) | plan; checked by test and by curl against the live API |
+| SPEC decision 10: `API_PROXY_TARGET`, loopback only | owner's choice when 8080 was taken (B14) |
+| `CLAUDE.md` commands and `corpus-check` step 3 pass `--labels`; `CLAUDE.md` documents `API_PROXY_TARGET` | a command changed (CLAUDE.md changes only when a rule or command changes) |
+| `.claude/launch.json` entry `frontend-live-8081` | the live browser check with the API on 8081 |
+| Worker reports' contract notes accepted as they are: `--bind-any` without `--listen` listens on `0.0.0.0:8080` with the Host check still loopback; a HEAD error has no body (HTTP forbids one); 403 before 405 before 404 | none conflicts with the frozen contract; PR4 revisits `--bind-any` for compose |
+
 ## AI was wrong
 
 | # | Claim | Who | How caught | Fix |
 | --- | --- | --- | --- | --- |
 | 1 | Session logs contain `<system-reminder>` and `command-*` tags and `isMeta` records that must be stripped | earlier planning (AI-assisted) | grep: 0, 0, 0 (Evidence, PR0a) | stripping kept as defensive code with a synthetic test; SPEC does not claim the tags were observed |
 | 2 | The contract examples are internally consistent | discarded setup attempt (its checks passed the strict-decode test, which tests shape, not arithmetic) | PR0b consistency script: 1 sidechain record in `diagnostics`, no `sidechain` flag on any model | flag added to the Sonnet row of `contract/examples/summary.json` |
+| 3 | rules-v1 has 25 ordered rules, and `TestClassifyRulesTableDriven` covers all 25 | PR2 go-worker report | coordinator `grep` of the rule table in `backend/internal/classify/classify.go`: 24 `rule(...)` entries, 24 distinct ids | SPEC decision 7 says 24; the test's coverage of every rule stands as reported (unit-tested), the count does not |
 
 ## Another day
 

@@ -39,3 +39,7 @@ code {
   height: 0.9rem;
   background: #36c;
 }
+.table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+}

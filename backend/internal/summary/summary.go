@@ -1,6 +1,6 @@
-// Package summary builds the contract SummaryResponse from ingested sessions. PR1 has no
-// classifier: every session is category "unknown" with rule null, and model_choice is a
-// schema-valid placeholder that PR3 replaces.
+// Package summary builds the contract SummaryResponse from ingested sessions. Sessions are
+// classified by rules-v1 (package classify); classifier.heldout comes from a labels file when
+// one is given. model_choice is a schema-valid placeholder that PR3 replaces.
 package summary
 
 import (
@@ -11,22 +11,30 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cristiangirlea/classify-sessions/backend/internal/classify"
 	"github.com/cristiangirlea/classify-sessions/backend/internal/contract"
+	"github.com/cristiangirlea/classify-sessions/backend/internal/evaluate"
 	"github.com/cristiangirlea/classify-sessions/backend/internal/ingest"
 	"github.com/cristiangirlea/classify-sessions/backend/internal/model"
 	"github.com/cristiangirlea/classify-sessions/backend/internal/pricing"
 )
 
 // Taxonomy is the contract's Category enum, in schema order.
-var Taxonomy = []string{"debug", "implement", "refactor", "test", "review", "research", "plan", "ops", "unknown"}
+var Taxonomy = classify.Taxonomy
 
 // ExampleRequest is shown on the page header.
 const ExampleRequest = "curl -s http://127.0.0.1:8080/api/summary"
 
 // Options are the inputs that do not come from the logs.
 type Options struct {
-	Input       string    // --input as given; reduced by InputHint
-	GeneratedAt time.Time // zero means now
+	Input       string           // --input as given; reduced by InputHint
+	GeneratedAt time.Time        // zero means now
+	Labels      []evaluate.Label // validated labels; nil means no labels file (heldout labelled 0)
+}
+
+type categoryAgg struct {
+	sessions, records, incomplete int
+	cost                          pricing.Components
 }
 
 // InputHint returns the --input value with forward slashes, or only its last path element
@@ -119,9 +127,9 @@ func Build(res *ingest.Result, opt Options) contract.SummaryResponse {
 			Assumptions:          append([]string{}, pricing.Assumptions...),
 		},
 		Classifier: contract.Classifier{
-			Method:   "none",
+			Method:   classify.Method,
 			Taxonomy: append([]string{}, Taxonomy...),
-			Heldout:  contract.Heldout{Disagreements: []contract.Disagreement{}},
+			Heldout:  evaluate.Empty(),
 		},
 		SessionList:    []contract.SessionRow{},
 		ExampleRequest: ExampleRequest,
@@ -131,9 +139,9 @@ func Build(res *ingest.Result, opt Options) contract.SummaryResponse {
 	var total pricing.Components
 	incomplete := 0
 	byModel := map[string]*modelAgg{}
-	unknownCat := contract.CategorySummary{Category: "unknown"}
-	var unknownCost pricing.Components
-	unclassifiedRecords := 0
+	byCategory := map[string]*categoryAgg{}
+	pred := map[string]classify.Result{}
+	classified, unclassifiedRecords := 0, 0
 
 	for _, s := range res.Sessions {
 		sc := pricing.Session(s)
@@ -171,22 +179,32 @@ func Build(res *ingest.Result, opt Options) contract.SummaryResponse {
 		}
 		sort.Strings(modelList)
 
-		// PR1: no classifier, every session is unknown.
-		unknownCat.Sessions++
-		unknownCat.Records += s.Counts.Records
-		unknownCost.Add(sc.Known)
-		if !sc.Complete {
-			unknownCat.CostIncompleteSessions++
+		cl := classify.Session(s)
+		pred[s.ID] = cl
+		ca := byCategory[cl.Category]
+		if ca == nil {
+			ca = &categoryAgg{}
+			byCategory[cl.Category] = ca
 		}
-		unclassifiedRecords += s.Counts.Records
+		ca.sessions++
+		ca.records += s.Counts.Records
+		ca.cost.Add(sc.Known)
+		if !sc.Complete {
+			ca.incomplete++
+		}
+		if cl.Category == classify.Unknown {
+			unclassifiedRecords += s.Counts.Records
+		} else {
+			classified++
+		}
 
 		out.SessionList = append(out.SessionList, contract.SessionRow{
 			ID:           s.ID,
 			StartedAt:    timePtr(s.Start, s.HasStart),
 			EndedAt:      timePtr(s.End, s.HasStart),
 			Records:      s.Counts.Records,
-			Category:     "unknown",
-			Rule:         nil,
+			Category:     cl.Category,
+			Rule:         cl.RulePtr(),
 			CostUSD:      usd(sc.Known.Total()),
 			CostComplete: sc.Complete,
 			Requests:     len(sc.Requests),
@@ -195,18 +213,30 @@ func Build(res *ingest.Result, opt Options) contract.SummaryResponse {
 			ToolErrors:   toolErrors,
 		})
 	}
-	if unknownCat.Sessions > 0 {
-		unknownCat.CostUSD = usd(unknownCost.Total())
-		unknownCat.Components = components(unknownCost)
-		out.Categories = append(out.Categories, unknownCat)
+	for _, cat := range Taxonomy {
+		ca := byCategory[cat]
+		if ca == nil {
+			continue
+		}
+		out.Categories = append(out.Categories, contract.CategorySummary{
+			Category:               cat,
+			Sessions:               ca.sessions,
+			Records:                ca.records,
+			CostUSD:                usd(ca.cost.Total()),
+			CostIncompleteSessions: ca.incomplete,
+			Components:             components(ca.cost),
+		})
+	}
+	if opt.Labels != nil {
+		out.Classifier.Heldout = evaluate.Compare(opt.Labels, pred)
 	}
 
 	n := len(res.Sessions)
 	out.Sessions = contract.Sessions{
 		Total:                        n,
-		Classified:                   0,
-		Unclassified:                 n,
-		UnclassifiedFractionSessions: fraction(n, n),
+		Classified:                   classified,
+		Unclassified:                 n - classified,
+		UnclassifiedFractionSessions: fraction(n-classified, n),
 		UnclassifiedFractionRecords:  fraction(unclassifiedRecords, c.Records),
 	}
 
