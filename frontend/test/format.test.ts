@@ -70,9 +70,9 @@ describe('format', () => {
   });
 
   it('formats a count over its base with the rate, and a null rate as not measured', () => {
-    expect(formatCountRate(1, 3, 1 / 3)).toBe('1/3 (33.3%)');
-    expect(formatCountRate(0, 0, null)).toBe('0/0 (not measured)');
-    expect(formatCountRate(0, 4, 0)).toBe('0/4 (0.0%)');
+    expect(formatCountRate(1, 3, 1 / 3)).toBe('1 of 3 (33%)');
+    expect(formatCountRate(0, 0, null)).toBe('0 of 0 (not measured)');
+    expect(formatCountRate(0, 4, 0)).toBe('0 of 4 (0%)');
   });
 
   it('formats a cost ratio, null as not measured', () => {

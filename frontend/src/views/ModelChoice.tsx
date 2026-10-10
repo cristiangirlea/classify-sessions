@@ -5,7 +5,7 @@ import {
   categoryBadges,
   formatCountRate,
   formatTimes,
-  formatUsdKnown,
+  formatAmount,
 } from '../lib/format';
 
 export const SYNTHETIC_NOTE =
@@ -22,6 +22,14 @@ const DEFINITION_LABELS: [keyof ModelsResponse['definitions'], string][] = [
 ];
 
 const COLUMNS = ['Category', 'Model', 'Sessions', 'Mean cost', 'Median cost', 'Corrections', 'Tool failures'];
+
+// Human wording for each verdict. Typed over the generated union, so a new value fails typecheck.
+const VERDICT_LABELS: Record<ModelAdvice['verdict'], string> = {
+  insufficient_evidence: 'insufficient evidence',
+  no_comparison_possible: 'no comparison possible',
+  no_premium_benefit_observed: 'no premium benefit observed',
+  fewer_corrections_at_premium: 'fewer corrections at premium',
+};
 
 function verdictTone(verdict: ModelAdvice['verdict']): string {
   if (verdict === 'fewer_corrections_at_premium') return 'badge ok';
@@ -45,7 +53,20 @@ function CellRow({ cell }: { cell: ModelCell }) {
   return (
     <tr>
       <td />
-      <td>{cell.model}</td>
+      <td>
+        {cell.model}
+        {!complete && (
+          <>
+            {' '}
+            <span
+              className="badge warn"
+              title={`Cost is incomplete in ${cell.sessions - cell.complete_cost_sessions} of ${cell.sessions} session(s); the costs in this row are lower bounds.`}
+            >
+              cost incomplete
+            </span>
+          </>
+        )}
+      </td>
       <td className="n">
         {cell.sessions}
         <br />
@@ -54,8 +75,8 @@ function CellRow({ cell }: { cell: ModelCell }) {
           {cell.long_context_sessions}
         </small>
       </td>
-      <td className="n">{formatUsdKnown(cell.mean_known_usd, complete)}</td>
-      <td className="n">{formatUsdKnown(cell.median_known_usd, complete)}</td>
+      <td className="n">{formatAmount(cell.mean_known_usd)}</td>
+      <td className="n">{formatAmount(cell.median_known_usd)}</td>
       <td className="n">
         <Rate n={cell.correction_messages} base={cell.user_messages} rate={cell.correction_rate} />
         <br />
@@ -140,7 +161,7 @@ export function ModelChoice({ choice }: { choice: ModelsResponse }) {
       )}
 
       <div className="advice">
-        <span className={verdictTone(advice.verdict)}>Verdict: {advice.verdict}</span>
+        <span className={verdictTone(advice.verdict)}>Verdict: {VERDICT_LABELS[advice.verdict]}</span>
         <p>{advice.statement}</p>
         <p className="muted facts">
           Expensive model: {advice.expensive_model ?? NOT_MEASURED}. Comparator: {advice.comparator_model ?? NOT_MEASURED}.

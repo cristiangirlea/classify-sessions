@@ -529,8 +529,24 @@ browser preview (not from the coordinator). No test file edited; no git command.
 | Phone width (375 px) | same | 16 px gutter, legend in 2 columns, paired tables stacked, only the purpose and models tables scroll inside; page not wider than the viewport | browser-checked |
 | Console and network | same | two 500s from a first load before the API had started (it was launched with a delay); after reload `/api/summary` 200 and no new error | browser-checked |
 
-Not checked in PR5: the Docker image with the restyled page (`docker compose up --build`
-rebuilds it; the PR4 Docker check covered the previous page).
+**PR5 follow-up** (owner's decision relayed by another session, B24, and confirmed by the owner,
+B25; react-worker B26). Three label changes, with only the label test assertions updated: the
+verdict badge in words (a typed map over the generated verdict union), model-table money cells
+with two decimals and one `cost incomplete` badge per row instead of lower-bound wording in each
+cell, and rates as `4 of 27 (15%)` (`0 of 0 (not measured)` for null). Test assertions changed,
+all label text: the two verdict strings, the four rate strings in `App.test.tsx` and three in
+`format.test.ts`, and the lower-bound cell assertion replaced by a badge, a two-decimal value and
+the absence of the old wording; one test title renamed to match. No other assertion changed.
+
+| Check | Command | Result | Level |
+| --- | --- | --- | --- |
+| Only label assertions changed | `git diff -U0 -- frontend/test` | the 10 lines above and one title | command output |
+| Frontend chain | `npm test && npm run typecheck && npm run build` | `contract.gen.ts matches contract/`; `Tests 44 passed (44)`; built | unit-tested |
+| Rebuild and up | `docker compose up --build -d`; `ps` | both images built; `web running 127.0.0.1:8088->80/tcp`, backend not published | docker-checked |
+| API through nginx | curl script on 8088 | GET, HEAD 200; `/api/models` 200; 404 and 405 JSON with `Allow`; foreign Host, Origin and cross-site 403 | docker-checked |
+| Same numbers as evidence | leaf diff against `evidence/summary.json`; `/api/models` against `model_choice` | only `generated_at` and `input_hint` differ (as in PR4); `/api/models` equal | docker-checked |
+| Restyled page | built-in browser on `http://127.0.0.1:8088/` | sections summary, purpose, money, coverage, models; 8 hero segments; "Verdict: insufficient evidence"; "4 of 27 (15%)"; Opus debug row "3.38 3.25" with one `cost incomplete` badge (12 such badges); 16 bars drawn; no sideways scroll; console empty; new bundle, every request to `127.0.0.1:8088` | docker-checked |
+| Down | `docker compose down`; curl 8088 | networks removed; `000` | docker-checked |
 
 ### Reviews (`/review-step` steps run by hand; the skills load only in a later session)
 
@@ -538,7 +554,7 @@ rebuilds it; the PR4 Docker check covered the previous page).
 | --- | --- | --- | --- |
 | PR0a | none | `.claude/hooks/guard-bash.mjs` is not in the kickoff's PR0a list; included because `.claude/settings.json` calls it | 22 paths, all coordinator-owned; `contract/` and `fixtures/` unchanged; suites not applicable (no code); privacy scan 0 hits; document numbers trace to the PR0a checks; SPEC planning numbers labelled unverified |
 | PR0c | none | `npm audit` findings in `vitest` (decision below); SPEC.md and README.md describe the finished system, so some sentences have no code behind them yet | backend and frontend chains pass locally; paths: `backend/**`, `frontend/**` and documents; contract and fixtures unchanged; privacy scan 0 hits |
-| PR5 (`/review-step`, run as a skill; base `origin/main`) | none | Sessions table removed from the page (mockup; allowed by the cut order); 15 deviations from the mockup, each for a test or against hard-coding; Docker image not rebuilt with the new page; the request arrived through another session and was confirmed with the owner | `frontend/**` and documents only; `backend/`, `contract/`, `fixtures/` unchanged; Go `ok` for 10 packages; frontend `Tests 44 passed (44)`, test files untouched, build ok; privacy scan 0 hits; no external URL in `frontend/src`; no clock times; `git diff --check` clean |
+| PR5 (`/review-step`, run as a skill; base `origin/main`) | none | Sessions table removed from the page (mockup; allowed by the cut order); 15 deviations from the mockup, each for a test or against hard-coding (three since changed by the owner's follow-up); Docker image not rebuilt with the new page at review time (rechecked in the follow-up); the request arrived through another session and was confirmed with the owner | `frontend/**` and documents only; `backend/`, `contract/`, `fixtures/` unchanged; Go `ok` for 10 packages; frontend `Tests 44 passed (44)`, test files untouched, build ok; privacy scan 0 hits; no external URL in `frontend/src`; no clock times; `git diff --check` clean |
 | PR4 (`/review-step`, run as a skill; base `origin/main`) | none | PR3 merged before its review, corpus check and Docker check (all run in PR4); the go-worker's PR3 report never arrived; README states the untested items; no outbound attempt tried from inside the API container | documents and `evidence/summary.json` only; `backend/`, `frontend/`, `contract/`, `fixtures/` unchanged; all 25 PLAN.md test names exist; Go `ok` for 10 packages; frontend `Tests 44 passed (44)`, build ok; privacy scan 0 hits; no clock times; `git diff --check` clean |
 | PR3 | not run | merged by the owner before `/review-step`; its checks ran in PR4 | — |
 | PR2 (`/review-step`, run as a skill; base `origin/main`) | none | rule count 25 reported, 24 in code (AI was wrong #3); held-out 10/10 is a consistency check, not accuracy; go-worker saw aggregate held-out predictions (not labels); react-worker ran `git diff --stat` once; a hung read-only shell command from the go-worker's run; page hint names 8080 without `--labels`; `--bind-any` defaults to `0.0.0.0:8080`; live check on 8081 | 3 named PR2 tests present, `TestLiveSummaryMatchesContract` skips only the two PR3 paths; Go `ok` for 9 packages; frontend `Tests 31 passed (31)`, `contract.gen.ts matches contract/`, build ok; privacy scan 0 hits; `contract/` and `fixtures/` unchanged; no clock times; `git diff --check` clean |

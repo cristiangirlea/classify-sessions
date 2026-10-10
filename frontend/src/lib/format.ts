@@ -52,9 +52,9 @@ export function formatSessionsCell(c: {
   return `${c.sessions} · complete ${c.complete_cost_sessions}/${c.sessions} · mixed ${c.mixed_model_sessions} · [1m] ${c.long_context_sessions}`;
 }
 
-/** "x/N (rate)": a count over its base, then the rate; a null rate is "not measured", never 0. */
+/** "x of N (rate)": a count over its base, then the whole-number rate; a null rate is "not measured", never 0. */
 export function formatCountRate(numerator: number, base: number, rate: number | null): string {
-  return `${numerator}/${base} (${formatPercent(rate)})`;
+  return `${numerator} of ${base} (${formatPercentWhole(rate)})`;
 }
 
 /** A cost ratio such as "5.1x"; null is "not measured". */

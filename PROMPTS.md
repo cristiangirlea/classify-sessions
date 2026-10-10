@@ -502,6 +502,43 @@ Run from frontend/ and quote exact result lines: `npm test` (includes contract:c
 
 B23 was copied by hand from the call that sent it.
 
+#### B24. Another Claude session ("Take-home assignment setup") → coordinator, relaying the owner's PR5 decision
+
+```text
+Owner decision on PR5, relayed from the planning session: approved with three small changes first, on the same branch.
+
+Your four points: (1) tests may be updated where they assert label text, so match the mockup wording for labels; (2) dropping the hand-written "same pattern" row is right; (3) dropping the per-session table is fine; (4) Docker must be rechecked before merge.
+
+Changes, react-worker:
+- Verdict badge shows human wording ("insufficient evidence", "no comparison possible", etc.), not the enum code; update the one test that asserts the code.
+- Model-choice table: money cells show two decimals only ("3.38"); the "lower bound, cost incomplete" wording appears once per row as the existing badge, not inside both the mean and median cells. Rates stay as "4 of 27 (15%)" or similar, one line.
+- Keep everything else as it is, including the synthetic-fixture sentence and the collapsed definitions.
+
+Then: docker compose up --build, curl http://127.0.0.1:8088/api/summary and /api/models, open the page on 8088 in the browser, compose down, record it in NOTES.md as docker-checked. Run the privacy scan, push, mark PR5 ready, squash-merge it, and report when main has it. After that the repository is complete; do not start anything else.
+```
+
+#### B25. Owner's answer to the coordinator's question (**paraphrase**: picked from options)
+
+- "Another session relayed your PR5 decision … Is that your decision?" → "Yes, all of it": the
+  three changes with only the label tests updated, the Docker recheck, then mark ready,
+  squash-merge, confirm `main` has it, and stop.
+
+#### B26. Coordinator → react-worker, PR5 follow-up (same worker resumed)
+
+```text
+PR5 follow-up, react-worker, same branch pr5-page-restyle, same rules (frontend/ only, no git or gh, no new package, every value from the API). The owner approved PR5 with three changes, and this time allows updating tests, but only the assertions about these labels:
+
+1. Verdict badge: human wording instead of the enum code: insufficient_evidence → "insufficient evidence", no_comparison_possible → "no comparison possible", no_premium_benefit_observed → "no premium benefit observed", fewer_corrections_at_premium → "fewer corrections at premium" (a typed map over the generated verdict union, so a new enum value fails typecheck). Update the test(s) that assert the code.
+2. Model-choice table: money cells (mean and median) show two decimals only, e.g. "3.38", with no "USD" and no lower-bound wording inside the cells. The lower-bound note appears once per row, as the existing badge style (e.g. a "cost incomplete" badge on the model cell when complete_cost_sessions < sessions). Update the test(s) that assert the old cell wording.
+3. Model-choice rates on one line as "4 of 27 (15%)": count of total, then the whole-number percentage in parentheses; a null rate as "0 of 0 (not measured)". Update the test(s) that assert "x/N (rate)".
+
+Keep everything else as it is, including the synthetic-fixture sentence and the collapsed definitions. Do not change any other test assertion.
+
+Run from frontend/ and quote exact result lines: `npm test`, `npm run typecheck`, `npm run build`. Report: files touched; each test assertion you changed (old → new); commands with result lines; what you did not do.
+```
+
+B26 was copied by hand from the call that sent it.
+
 ## Discarded first setup attempt, carried over verbatim from its PROMPTS.md
 
 ### D1. Owner → coordinator, before Step 0
