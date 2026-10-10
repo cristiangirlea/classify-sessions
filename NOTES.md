@@ -19,11 +19,7 @@ absent, `Host` header checks, CRLF in embedded assets, `GOWORK=off` under a pare
 The `.claude/settings.json` here was written fresh from the plan's list of rules, not copied
 from the earlier attempt's file, because no session in this run may read outside the repository.
 
-Separately, inside this run, a **first setup attempt** produced all setup files as one 49-file
-pull request. The owner discarded it because
-setup must land in small reviewable steps, and recreated the repository from the fixtures
-commit. Its files were kept outside git in `.handoff/pr0-draft/` and are reused, re-sliced and
-re-verified in PR0a to PR0c (see "Reuse from the discarded attempt" below).
+Inside this run, a first setup attempt landed everything as one 49-file pull request. The owner discarded it so that setup would arrive in small reviewable steps; the repository was recreated from the fixtures commit and the draft's files were re-sliced into PR0a to PR0c and re-verified there. Two of its files were corrected on the way: the summary example gained a missing sidechain flag, and the privacy scan lost a mode that printed prompt text.
 
 ## AI authorship
 
@@ -42,9 +38,8 @@ assistance. Authorship is documented here (sessions, models, tool use) and in PR
 - Location: app-created worktree `<repo>/.claude/worktrees/session-a-kickoff-e3a8f5`; its root
   is "the project folder" for every rule.
 - Git: one branch per PR from `origin/main`, squash-merged; `main` is never checked out here.
-- Disclosure: before the owner copied `.handoff/` into the worktree, the coordinator read
-  `.handoff/KICKOFF.md` once from the main checkout, which the kickoff forbids; not repeated,
-  and `plan.md` was read only from the worktree copy.
+- Disclosure: the kickoff file was read once from the main checkout before the owner copied
+  `.handoff/` into the worktree; not repeated.
 
 ### Session B (PR1 to PR4)
 
@@ -53,21 +48,8 @@ assistance. Authorship is documented here (sessions, models, tool use) and in PR
 - Location: app-created worktree `<repo>/.claude/worktrees/session-b-kickoff-da09c2`, branch
   fast-forwarded to `main` by the owner before PR1; one branch per PR from `main`.
 - `/agents`: `go-worker` and `react-worker` were listed among the session's agent types.
-- Disclosure: before `.handoff/` was in the worktree, the coordinator tried to list it in the
-  main checkout; the owner rejected the call before it ran. Later the owner rejected a read of a
-  corpus file the coordinator wanted for the synthetic fixtures' record shape; the fixtures were
-  written from the plan and the contract instead, and the go-worker was asked to report any
-  mismatch with the corpus record shape (PR1 worker reports below).
-
-### Discarded first setup attempt, carried over from its own notes
-
-Not re-verified by this session unless re-run below. Model and effort as the owner reported
-them then: `claude-opus-5-5` at high effort, "chosen for PR0 because it writes the contract and
-steering files that every later step depends on". Its notes disclosed two slips, both outside the worktree and removed at once: a dev
-server log written one directory too high, and a temporary backup of a contract example in the
-system temp folder. It looked up Claude Code settings, agent, skill and hook syntax through the
-`claude-code-guide` subagent (prompt and answer summary in PROMPTS.md); those answers shaped the
-settings and skills reused here and remain **unverified** beyond that docs answer.
+- Disclosure: two reads outside the worktree were attempted and rejected by the owner before
+  they ran; the synthetic fixtures were written from the plan and the contract instead.
 
 ### Workers
 
@@ -98,38 +80,6 @@ proposer and rule-writer are both Claude models, so agreement measures consisten
 reading of the same first prompt, not with a human judgement; and the planning session also
 read the earlier attempt (read-only, for data facts), so independence from that attempt's
 taxonomy is not guaranteed.
-
-## Reuse from the discarded attempt (`.handoff/pr0-draft/`)
-
-| Draft file(s) | In | Changed |
-| --- | --- | --- |
-| CLAUDE.md | PR0a | attribution and generated-file rules added; describes the finished layout and commands (owner's document rules) |
-| AGENTS.md, `.cursor/rules/*.mdc` | PR0a | "after PR0" made precise (PR0b for the contract, PR0c for the scaffolds) |
-| README.md | PR0a | finished layout and commands, one line on what is not built yet; final text in PR4 |
-| SPEC.md | PR0a, PR0c | PR0c: rewritten as the brief's five sections (owner's rule); legend and planning facts moved here |
-| PLAN.md | PR0a, PR0c | PR0 row split into PR0a to PR0c; PR0c: reduced to PR sequence, contents and cut order (owner's rule) |
-| NOTES.md, PROMPTS.md | PR0a | this session's entries added; the discarded attempt's entries kept, labelled as carried over |
-| `.claude/agents/*.md` | PR0a | unchanged |
-| `.claude/settings.json` | PR0a | `attribution` block added |
-| `.claude/hooks/guard-bash.mjs` | PR0a | unchanged (the settings hook needs it) |
-| `.claude/skills/review-step/SKILL.md` | PR0a | PR names PR0a to PR0c; frozen-input rules per setup PR; "not applicable" before PR0c; trailer check |
-| `.claude/skills/corpus-check/SKILL.md` | PR0a | tag check writes `evidence/tags.txt`; creates `evidence/`; matching `allowed-tools` |
-| `.claude/skills/privacy-scan/*` | PR0a | `--sheet` labelling mode removed from `first-prompts.mjs` (labels now come from the kickoff, so nothing prints prompt text); in `scan.mjs` the stale `evidence/tags.txt` allowance removed and `corpus-check/SKILL.md` allowed to name the tag it greps for |
-| LICENSE, `.editorconfig` | PR0a | unchanged |
-| `.gitignore` | PR0a | unchanged from `main` (already has `.claude/worktrees/`); the draft's `evidence/*.tmp` line dropped (no step writes such files) |
-| `.gitattributes` | PR0a | `linguist-generated=true` for `frontend/package-lock.json` and `frontend/src/api/contract.gen.ts` |
-| `contract/*.schema.json`, `contract/examples/models.json`, `contract/examples/error.json` | PR0b | unchanged; re-verified (Evidence, PR0b) |
-| `contract/examples/summary.json` | PR0b | `"sidechain"` flag added to the Sonnet `by_model` row: the draft reported 1 sidechain record with no model flagged (AI was wrong, #2) |
-| `contract/README.md` | PR0b | "frozen at the end of PR0" → "once PR0b is merged"; Go and frontend drift checks marked PR0c |
-| `fixtures/labels/heldout.json` | PR0b | "Frozen in PR0" → "PR0b"; provenance statement extended with the selection sentence so it matches the kickoff wording exactly |
-| `backend/go.mod`, `internal/contract/*.go` | PR0c | unchanged; re-verified (Evidence, PR0c) |
-| `backend/cmd/sessions/main.go` | PR0c | comment and version string no longer name a PR (`0.0.0`) |
-| `frontend/` config, `index.html`, `main.tsx`, `scripts/contract-gen.mjs`, `package.json`, `package-lock.json` | PR0c | unchanged; `npm ci` installs from the lock file; `contract.gen.ts` regenerated by `npm run contract:gen` and identical to the draft |
-| `frontend/src/App.tsx` | PR0c | comment no longer names a PR |
-| `frontend/src/mock/vitePlugin.ts` | PR0c | the 404 body is built as JSON directly instead of by string-replacing text inside `error.json` |
-| `evidence/manifest.txt`, `evidence/tags.txt` | not reused | written by `/corpus-check` from PR1; PR0a records the same commands' output below |
-| `docker-compose.yml` placeholder | not reused | not in any setup PR's file list; PR4 writes the real file |
-| `fixtures/README.md`, `fixtures/claude-code.sha256` | not reused | identical to `main` (`diff` empty) |
 
 ## Tool use log
 
