@@ -1,9 +1,9 @@
 import type { Components, ModelSpend, SummaryResponse } from '../api/contract.gen';
-import { formatCount, formatUsd, formatUsdKnown } from '../lib/format';
+import { formatAmount, formatCount, formatUsdKnown } from '../lib/format';
 
 type Flag = ModelSpend['flags'][number];
 
-// Plain-text meaning of each flag the contract can carry.
+// Plain-text meaning of each flag the contract can carry; shown as the badge tooltip.
 export const FLAG_EXPLANATIONS: Record<Flag, string> = {
   missing_usage: 'Some requests carry no token usage, so they contribute no cost and their sessions are incomplete.',
   unknown_model: 'The model is not in the price table, so its requests cannot be priced and its sessions are incomplete.',
@@ -12,153 +12,120 @@ export const FLAG_EXPLANATIONS: Record<Flag, string> = {
   sidechain: 'Some requests were made by sidechain agents; they are billed and counted, and flagged for visibility.',
 };
 
-const COMPONENT_LABELS: [keyof Components, string][] = [
-  ['input_usd', 'Input'],
-  ['output_usd', 'Output'],
-  ['cache_read_usd', 'Cache read'],
-  ['cache_write_usd', 'Cache write'],
-];
+interface Badge {
+  label: string;
+  tone: 'warn' | 'plain';
+  title: string;
+}
 
-function ComponentsTable({ components }: { components: Components }) {
-  return (
-    <div className="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>Component</th>
-            <th className="num">Known USD</th>
-          </tr>
-        </thead>
-        <tbody>
-          {COMPONENT_LABELS.map(([key, label]) => (
-            <tr key={key}>
-              <td>{label}</td>
-              <td className="num">{formatUsd(components[key])}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+/** Badges for a model row, derived from its flags only. */
+export function modelBadges(flags: Flag[]): Badge[] {
+  const out: Badge[] = [];
+  const incomplete = flags.filter((f) => f === 'missing_usage' || f === 'unknown_model' || f === 'no_cache_fields');
+  if (incomplete.length > 0) {
+    out.push({ label: 'cost incomplete', tone: 'warn', title: incomplete.map((f) => FLAG_EXPLANATIONS[f]).join(' ') });
+  }
+  if (flags.includes('unknown_model')) {
+    out.push({ label: 'not in price table', tone: 'plain', title: FLAG_EXPLANATIONS.unknown_model });
+  }
+  if (flags.includes('long_context_marker')) {
+    out.push({ label: 'base rate', tone: 'plain', title: FLAG_EXPLANATIONS.long_context_marker });
+  }
+  if (flags.includes('sidechain')) {
+    out.push({ label: 'sidechain', tone: 'plain', title: FLAG_EXPLANATIONS.sidechain });
+  }
+  return out;
 }
 
 export function Spend({ summary }: { summary: SummaryResponse }) {
-  const { spend, categories, pricing } = summary;
+  const { spend, pricing } = summary;
   const complete = spend.incomplete_sessions === 0;
-  const maxCost = Math.max(0, ...categories.map((c) => c.cost_usd));
-  const usedFlags = Array.from(new Set(spend.by_model.flatMap((m) => m.flags)));
+  const models = [...spend.by_model].sort((a, b) => b.cost_usd - a.cost_usd || a.model.localeCompare(b.model));
+
+  const rows: { key: keyof Components; label: string; rate: string }[] = [
+    { key: 'input_usd', label: 'Fresh input', rate: 'list price' },
+    { key: 'output_usd', label: 'Output', rate: 'list price' },
+    { key: 'cache_read_usd', label: 'Cache reads', rate: `${pricing.cache_read_multiplier}× input` },
+    { key: 'cache_write_usd', label: 'Cache writes', rate: `${pricing.cache_write_multiplier}× input` },
+  ];
+  rows.sort((a, b) => spend.components[b.key] - spend.components[a.key]);
 
   return (
-    <section aria-labelledby="spend-h">
-      <h2 id="spend-h">Spend</h2>
-      <p>
-        Total: <strong>{formatUsdKnown(spend.total_usd, complete)}</strong>.
+    <section id="money" aria-labelledby="spend-h">
+      <h2 id="spend-h">Where the money goes</h2>
+      <p className="muted">
+        Total known cost: <strong>{formatUsdKnown(spend.total_usd, complete)}</strong>.{' '}
+        {complete
+          ? 'Every session has complete cost.'
+          : `${formatCount(spend.incomplete_sessions)} session(s) have incomplete cost, so the total is the known part only: a lower bound, not the full cost. Unknown cost is never counted as zero.`}
       </p>
-      {complete ? (
-        <p>Every session has complete cost.</p>
-      ) : (
-        <p>
-          {formatCount(spend.incomplete_sessions)} session(s) have incomplete cost. The total is the known part
-          only: a lower bound, not the full cost. Unknown cost is never counted as zero.
-        </p>
-      )}
-
-      <h3>Cost by category</h3>
-      {categories.length === 0 ? (
-        <p>No categories: no spend to show.</p>
-      ) : (
-        <div className="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Category</th>
-                <th className="num">Known USD</th>
-                <th>Share of largest</th>
-                <th className="num">Incomplete sessions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {categories.map((c) => {
-                const width = maxCost > 0 ? (c.cost_usd / maxCost) * 100 : 0;
-                return (
-                  <tr key={c.category}>
-                    <td>{c.category}</td>
-                    <td className="num">{formatUsdKnown(c.cost_usd, c.cost_incomplete_sessions === 0)}</td>
-                    <td className="barcell">
-                      <div className="bar" style={{ width: `${width}%` }} />
-                    </td>
-                    <td className="num">{formatCount(c.cost_incomplete_sessions)}</td>
+      <div className="two">
+        <div>
+          <h3>By model</h3>
+          {models.length === 0 ? (
+            <p>No model usage was found.</p>
+          ) : (
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Model</th>
+                    <th className="n">Requests</th>
+                    <th className="n">Known cost</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {models.map((m) => (
+                    <tr key={m.model}>
+                      <td>
+                        {m.model}
+                        {modelBadges(m.flags).map((b) => (
+                          <span key={b.label}>
+                            {' '}
+                            <span className={b.tone === 'warn' ? 'badge warn' : 'badge'} title={b.title}>
+                              {b.label}
+                            </span>
+                          </span>
+                        ))}
+                      </td>
+                      <td className="n">{formatCount(m.requests)}</td>
+                      <td className="n">{formatAmount(m.cost_usd)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      )}
-
-      <h3>Cost components</h3>
-      <ComponentsTable components={spend.components} />
-
-      <h3>By model</h3>
-      {spend.by_model.length === 0 ? (
-        <p>No model usage was found.</p>
-      ) : (
-        <div className="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th>Model</th>
-                <th>Price key</th>
-                <th className="num">Requests</th>
-                <th className="num">Known USD</th>
-                <th>Flags</th>
-              </tr>
-            </thead>
-            <tbody>
-              {spend.by_model.map((m) => (
-                <tr key={m.model}>
-                  <td className="mono">{m.model}</td>
-                  <td className="mono">{m.price_key ?? 'not in price table'}</td>
-                  <td className="num">{formatCount(m.requests)}</td>
-                  <td className="num">{formatUsd(m.cost_usd)}</td>
-                  <td>{m.flags.length === 0 ? 'none' : m.flags.join(', ')}</td>
+        <div>
+          <h3>By component</h3>
+          <div className="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Component</th>
+                  <th className="n">Known cost</th>
+                  <th className="n">Rate</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.key}>
+                    <td>{r.label}</td>
+                    <td className="n">{formatAmount(spend.components[r.key])}</td>
+                    <td className="n muted">{r.rate}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="muted note">
+            Public rates as of {pricing.as_of}
+            {pricing.assumptions.length > 0 ? `. ${pricing.assumptions.join(' ')}` : '.'} Source:{' '}
+            <span className="code">{pricing.source_url}</span> (text only, not fetched).
+          </p>
         </div>
-      )}
-      {usedFlags.length > 0 && (
-        <>
-          <h4>What the flags mean</h4>
-          <ul>
-            {usedFlags.map((f) => (
-              <li key={f}>
-                <span className="mono">{f}</span>: {FLAG_EXPLANATIONS[f]}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-
-      <h3>Pricing</h3>
-      <p>
-        Source: <span className="mono">{pricing.source_url}</span> (text only, not fetched). As of {pricing.as_of}.
-      </p>
-      <p>
-        Cache read multiplier: {pricing.cache_read_multiplier}x input. Cache write multiplier:{' '}
-        {pricing.cache_write_multiplier}x input.
-      </p>
-      <h4>Assumptions</h4>
-      {pricing.assumptions.length === 0 ? (
-        <p>No assumptions listed.</p>
-      ) : (
-        <ul>
-          {pricing.assumptions.map((a) => (
-            <li key={a}>{a}</li>
-          ))}
-        </ul>
-      )}
+      </div>
     </section>
   );
 }

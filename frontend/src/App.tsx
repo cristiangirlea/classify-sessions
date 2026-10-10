@@ -4,8 +4,8 @@ import type { SummaryResponse } from './api/contract.gen';
 import { Coverage } from './views/Coverage';
 import { ModelChoice } from './views/ModelChoice';
 import { Purpose } from './views/Purpose';
-import { Sessions } from './views/Sessions';
 import { Spend } from './views/Spend';
+import { Summary } from './views/Summary';
 
 type State =
   | { kind: 'loading' }
@@ -16,7 +16,7 @@ type State =
 export function ErrorState({ message }: { message: string }) {
   return (
     <main>
-      <p role="alert">
+      <p role="alert" className="error">
         Could not load the summary: {message}. The API must be running on 127.0.0.1:8080: from backend/ run{' '}
         <code>go run ./cmd/sessions serve --input ../fixtures/claude-code</code>, then reload this page.
       </p>
@@ -24,20 +24,14 @@ export function ErrorState({ message }: { message: string }) {
   );
 }
 
-/** The four panels for a loaded summary. */
+/** The five sections for a loaded summary. */
 export function Report({ summary }: { summary: SummaryResponse }) {
   return (
     <main>
-      <header>
-        <h1>Classify Your Sessions</h1>
-        <p>
-          Generated {summary.generated_at}. Request: <code>{summary.example_request}</code>
-        </p>
-      </header>
+      <Summary summary={summary} />
       <Purpose summary={summary} />
       <Spend summary={summary} />
       <Coverage summary={summary} />
-      <Sessions summary={summary} />
       <ModelChoice choice={summary.model_choice} />
     </main>
   );
@@ -62,7 +56,11 @@ export function App() {
     };
   }, []);
 
-  if (state.kind === 'loading') return <p>Loading the summary…</p>;
+  if (state.kind === 'loading') return (
+      <main>
+        <p>Loading the summary…</p>
+      </main>
+    );
   if (state.kind === 'error') return <ErrorState message={state.message} />;
   return <Report summary={state.summary} />;
 }

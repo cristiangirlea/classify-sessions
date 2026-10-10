@@ -66,7 +66,7 @@ describe('Model choice panel', () => {
 
   it('shows the example verdict and statement', () => {
     expect(choice.advice.verdict).toBe('no_comparison_possible');
-    expect(page).toContain('Verdict: no_comparison_possible');
+    expect(page).toContain('Verdict: no comparison possible');
     expect(page).toContain(choice.advice.statement);
     expect(page).toContain('Cost ratio: not measured');
   });
@@ -77,16 +77,18 @@ describe('Model choice panel', () => {
   });
 
   it('shows a correction rate as x/N with the rate', () => {
-    expect(page).toContain('1/3 (33.3%)');
-    expect(page).toContain('0/1 (0.0%)');
+    expect(page).toContain('1 of 3 (33%)');
+    expect(page).toContain('0 of 1 (0%)');
   });
 
   it('shows a null tool failure rate as not measured', () => {
-    expect(page).toContain('0/0 (not measured)');
+    expect(page).toContain('0 of 0 (not measured)');
   });
 
-  it('uses lower-bound wording where complete_cost_sessions < sessions', () => {
-    expect(page).toContain('at least USD 1.1475 (lower bound, cost incomplete)');
+  it('flags a row with cost incomplete and shows two-decimal money where complete_cost_sessions < sessions', () => {
+    expect(page).toContain('claude-opus-4-1 cost incomplete');
+    expect(page).not.toContain('at least USD 1.1475');
+    expect(page).toContain('1.15');
   });
 
   it('shows the seven definitions, the caveats and the synthetic-fixture sentence', () => {
@@ -111,7 +113,7 @@ describe('Model choice panel', () => {
     expect(t).toContain('Cost ratio: 5.1x');
     expect(t).toContain('Shared categories: review');
     expect(t).toContain('00000000-0000-4000-8000-0000000000ff');
-    expect(t).toContain('Verdict: insufficient_evidence');
+    expect(t).toContain('Verdict: insufficient evidence');
   });
 
   it('shows a text empty state with no categories', () => {

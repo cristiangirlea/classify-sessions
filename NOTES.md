@@ -146,6 +146,7 @@ taxonomy is not guaranteed.
 | PR2 | `/corpus-check`, `/review-step`, `/privacy-scan`; built-in browser (`frontend-live-8081`); curl script | evidence, review, scan, live checks | results under Evidence, PR2 |
 | PR3 | both workers resumed in one message (B17, B18); coordinator wrote the Docker files; the app's "Create PR" command | model choice, panel, Docker | react-worker reported; go-worker's report never arrived (verified from code and evidence instead) |
 | PR4 | `/corpus-check`; `docker compose build`, `up -d`, curl script, built-in browser on 8088, `down`; scratch scripts (JSON leaf diff, quote check); `/review-step`, `/privacy-scan` | evidence, docker check, documents | results under Evidence, PR4 |
+| PR5 | a message from another Claude session (relayed request, surfaced to the owner first); `react-worker` resumed (B23); built-in browser at desktop and 375 px against the API on 8081; `/review-step`, `/privacy-scan` | page restyle to the owner's mockup | results under Evidence, PR5 |
 
 ## Evidence
 
@@ -500,12 +501,60 @@ with those items listed as not done in its description. All four ran in PR4 belo
 Nothing broke, so nothing was fixed. Not checked: an outbound request attempted from inside the
 API container (the image has no shell or client to try one).
 
+### PR5 page restyle
+
+Requested through another Claude session relaying an owner instruction (PROMPTS.md B21); the
+coordinator asked the owner before acting, and the owner chose a separate PR (B22).
+**react-worker** (reported model id `claude-sonnet-5-5`; resumed, B23). Summary of its report:
+the page now follows the owner's mockup (`.handoff/design/index.html`, untracked): hero with
+headline, lede, stacked spend bar and legend (new `src/views/Summary.tsx`, `src/lib/rank.ts`),
+then purpose, money, coverage and models sections, the mockup's CSS in `styles.css`; `Sessions.tsx`
+deleted (the mockup has no session table and no test needs one). Every value bound to the API;
+the lede's "Half of the sessions" only when exactly half. Fifteen deviations from the mockup,
+all to keep the existing tests passing or to avoid hard-coded text: the mockup's editorial row
+("Same pattern: Opus costs four to ten times more …") not copied and every category rendered from
+data, single-model categories included; test-asserted strings kept in the mockup's style (verdict
+as the raw token, rates as `x/N (rate)`, "Total (nonblank)", "Agreement fraction", the
+definitions in a closed `<details>`, the synthetic-fixture sentence, `table-scroll` wrappers);
+a median column and the `complete · mixed · [1m]` line kept from PR3; badge explanations as
+`title` text. It ignored a hook message, appended to a tool result, that told it to start a
+browser preview (not from the coordinator). No test file edited; no git command.
+
+| Check | Command | Result | Level |
+| --- | --- | --- | --- |
+| Tests untouched | `git status --short frontend/test` | no change | command output |
+| Nothing copied from the mockup | `grep` of `frontend/src` for the mockup's numbers, dates and editorial sentence | no hit | command output |
+| Frontend chain (coordinator rerun) | `npm test && npm run typecheck && npm run build` | `contract.gen.ts matches contract/`; `Tests 44 passed (44)`; built | unit-tested |
+| Desktop, live API (8081) | built-in browser; page text | sections summary, purpose, money, coverage, models; headline "What 34 coding sessions cost, and what they were for"; lede USD 38.01, "Half of the sessions, 17 of 34", "1 record in 1,107"; hero segments and legend in cost order (debug 27% … plan 2%); purpose rows with "x of n" and a total "All sessions 34 38.01 … 17 of 34"; badges cost incomplete, base rate, sidechain, thin, not comparable; "Verdict: insufficient_evidence"; no sideways scroll | browser-checked |
+| Phone width (375 px) | same | 16 px gutter, legend in 2 columns, paired tables stacked, only the purpose and models tables scroll inside; page not wider than the viewport | browser-checked |
+| Console and network | same | two 500s from a first load before the API had started (it was launched with a delay); after reload `/api/summary` 200 and no new error | browser-checked |
+
+**PR5 follow-up** (owner's decision relayed by another session, B24, and confirmed by the owner,
+B25; react-worker B26). Three label changes, with only the label test assertions updated: the
+verdict badge in words (a typed map over the generated verdict union), model-table money cells
+with two decimals and one `cost incomplete` badge per row instead of lower-bound wording in each
+cell, and rates as `4 of 27 (15%)` (`0 of 0 (not measured)` for null). Test assertions changed,
+all label text: the two verdict strings, the four rate strings in `App.test.tsx` and three in
+`format.test.ts`, and the lower-bound cell assertion replaced by a badge, a two-decimal value and
+the absence of the old wording; one test title renamed to match. No other assertion changed.
+
+| Check | Command | Result | Level |
+| --- | --- | --- | --- |
+| Only label assertions changed | `git diff -U0 -- frontend/test` | the 10 lines above and one title | command output |
+| Frontend chain | `npm test && npm run typecheck && npm run build` | `contract.gen.ts matches contract/`; `Tests 44 passed (44)`; built | unit-tested |
+| Rebuild and up | `docker compose up --build -d`; `ps` | both images built; `web running 127.0.0.1:8088->80/tcp`, backend not published | docker-checked |
+| API through nginx | curl script on 8088 | GET, HEAD 200; `/api/models` 200; 404 and 405 JSON with `Allow`; foreign Host, Origin and cross-site 403 | docker-checked |
+| Same numbers as evidence | leaf diff against `evidence/summary.json`; `/api/models` against `model_choice` | only `generated_at` and `input_hint` differ (as in PR4); `/api/models` equal | docker-checked |
+| Restyled page | built-in browser on `http://127.0.0.1:8088/` | sections summary, purpose, money, coverage, models; 8 hero segments; "Verdict: insufficient evidence"; "4 of 27 (15%)"; Opus debug row "3.38 3.25" with one `cost incomplete` badge (12 such badges); 16 bars drawn; no sideways scroll; console empty; new bundle, every request to `127.0.0.1:8088` | docker-checked |
+| Down | `docker compose down`; curl 8088 | networks removed; `000` | docker-checked |
+
 ### Reviews (`/review-step` steps run by hand; the skills load only in a later session)
 
 | PR | Blocking | Non-blocking | Checks |
 | --- | --- | --- | --- |
 | PR0a | none | `.claude/hooks/guard-bash.mjs` is not in the kickoff's PR0a list; included because `.claude/settings.json` calls it | 22 paths, all coordinator-owned; `contract/` and `fixtures/` unchanged; suites not applicable (no code); privacy scan 0 hits; document numbers trace to the PR0a checks; SPEC planning numbers labelled unverified |
 | PR0c | none | `npm audit` findings in `vitest` (decision below); SPEC.md and README.md describe the finished system, so some sentences have no code behind them yet | backend and frontend chains pass locally; paths: `backend/**`, `frontend/**` and documents; contract and fixtures unchanged; privacy scan 0 hits |
+| PR5 (`/review-step`, run as a skill; base `origin/main`) | none | Sessions table removed from the page (mockup; allowed by the cut order); 15 deviations from the mockup, each for a test or against hard-coding (three since changed by the owner's follow-up); Docker image not rebuilt with the new page at review time (rechecked in the follow-up); the request arrived through another session and was confirmed with the owner | `frontend/**` and documents only; `backend/`, `contract/`, `fixtures/` unchanged; Go `ok` for 10 packages; frontend `Tests 44 passed (44)`, test files untouched, build ok; privacy scan 0 hits; no external URL in `frontend/src`; no clock times; `git diff --check` clean |
 | PR4 (`/review-step`, run as a skill; base `origin/main`) | none | PR3 merged before its review, corpus check and Docker check (all run in PR4); the go-worker's PR3 report never arrived; README states the untested items; no outbound attempt tried from inside the API container | documents and `evidence/summary.json` only; `backend/`, `frontend/`, `contract/`, `fixtures/` unchanged; all 25 PLAN.md test names exist; Go `ok` for 10 packages; frontend `Tests 44 passed (44)`, build ok; privacy scan 0 hits; no clock times; `git diff --check` clean |
 | PR3 | not run | merged by the owner before `/review-step`; its checks ran in PR4 | — |
 | PR2 (`/review-step`, run as a skill; base `origin/main`) | none | rule count 25 reported, 24 in code (AI was wrong #3); held-out 10/10 is a consistency check, not accuracy; go-worker saw aggregate held-out predictions (not labels); react-worker ran `git diff --stat` once; a hung read-only shell command from the go-worker's run; page hint names 8080 without `--labels`; `--bind-any` defaults to `0.0.0.0:8080`; live check on 8081 | 3 named PR2 tests present, `TestLiveSummaryMatchesContract` skips only the two PR3 paths; Go `ok` for 9 packages; frontend `Tests 31 passed (31)`, `contract.gen.ts matches contract/`, build ok; privacy scan 0 hits; `contract/` and `fixtures/` unchanged; no clock times; `git diff --check` clean |

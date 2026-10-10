@@ -1,93 +1,94 @@
 import type { SummaryResponse } from '../api/contract.gen';
-import { formatCount, formatPercent } from '../lib/format';
+import { formatCount, formatPercent, formatPercentFine } from '../lib/format';
 
 export function Coverage({ summary }: { summary: SummaryResponse }) {
-  const { records, sessions, source } = summary;
+  const { records, sessions } = summary;
   const d = records.diagnostics;
-  return (
-    <section aria-labelledby="coverage-h">
-      <h2 id="coverage-h">Coverage</h2>
-      <p>
-        Input: {formatCount(source.files)} file(s) under <span className="mono">{source.input_hint}</span>.
-      </p>
+  const share = (n: number) => (records.total > 0 ? formatPercent(n / records.total) : formatPercent(null));
+  const outcomes: [string, number][] = [
+    ['Parsed', records.parsed],
+    ['Duplicate, read once', records.duplicate],
+    ['Malformed', records.malformed],
+    ['Unknown type', records.unknown],
+  ];
 
-      <h3>Records</h3>
-      {records.total === 0 ? (
-        <p>No records were found.</p>
-      ) : (
-        <>
+  return (
+    <section id="coverage" aria-labelledby="coverage-h">
+      <h2 id="coverage-h">What could not be counted</h2>
+      <p className="muted">
+        Every nonblank line in the logs ends in exactly one of these four outcomes. Input: {formatCount(summary.source.files)}{' '}
+        file(s) under <span className="code">{summary.source.input_hint}</span>.
+      </p>
+      <div className="two">
+        <div>
+          {records.total === 0 ? (
+            <p>No records were found.</p>
+          ) : (
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Outcome</th>
+                    <th className="n">Records</th>
+                    <th className="n">Share</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {outcomes.map(([label, n]) => (
+                    <tr key={label}>
+                      <td>{label}</td>
+                      <td className="n">{formatCount(n)}</td>
+                      <td className="n">{share(n)}</td>
+                    </tr>
+                  ))}
+                  <tr className="total">
+                    <td>Total (nonblank)</td>
+                    <td className="n">{formatCount(records.total)}</td>
+                    <td className="n">100%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+        <div>
           <div className="table-scroll">
             <table>
               <thead>
                 <tr>
-                  <th>Outcome</th>
-                  <th className="num">Records</th>
+                  <th>Among parsed records</th>
+                  <th className="n">Records</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>Total (nonblank)</td>
-                  <td className="num">{formatCount(records.total)}</td>
+                  <td>Requests with no token usage</td>
+                  <td className="n">{formatCount(d.missing_usage)}</td>
                 </tr>
                 <tr>
-                  <td>Parsed</td>
-                  <td className="num">{formatCount(records.parsed)}</td>
+                  <td>Requests without cache fields</td>
+                  <td className="n">{formatCount(d.missing_cache_fields)}</td>
                 </tr>
                 <tr>
-                  <td>Malformed</td>
-                  <td className="num">{formatCount(records.malformed)}</td>
+                  <td>Records without a timestamp</td>
+                  <td className="n">{formatCount(d.missing_timestamp)}</td>
                 </tr>
                 <tr>
-                  <td>Unknown</td>
-                  <td className="num">{formatCount(records.unknown)}</td>
-                </tr>
-                <tr>
-                  <td>Duplicate</td>
-                  <td className="num">{formatCount(records.duplicate)}</td>
+                  <td>Sidechain requests</td>
+                  <td className="n">{formatCount(d.sidechain)}</td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <p>Each nonblank record is counted exactly once: total = parsed + malformed + unknown + duplicate.</p>
-        </>
-      )}
-      <p>Unparsed fraction (malformed + unknown, over total): {formatPercent(records.unparsed_fraction)}.</p>
-
-      <h3>Unclassified</h3>
-      <p>
-        Sessions: {formatCount(sessions.unclassified)} of {formatCount(sessions.total)} (
-        {formatPercent(sessions.unclassified_fraction_sessions)}). Classified: {formatCount(sessions.classified)}.
-      </p>
-      <p>Records in unclassified sessions: {formatPercent(sessions.unclassified_fraction_records)}.</p>
-
-      <h3>Diagnostics</h3>
-      <div className="table-scroll">
-        <table>
-          <thead>
-            <tr>
-              <th>Diagnostic</th>
-              <th className="num">Records</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Missing usage</td>
-              <td className="num">{formatCount(d.missing_usage)}</td>
-            </tr>
-            <tr>
-              <td>Missing timestamp</td>
-              <td className="num">{formatCount(d.missing_timestamp)}</td>
-            </tr>
-            <tr>
-              <td>Missing cache fields</td>
-              <td className="num">{formatCount(d.missing_cache_fields)}</td>
-            </tr>
-            <tr>
-              <td>Sidechain</td>
-              <td className="num">{formatCount(d.sidechain)}</td>
-            </tr>
-          </tbody>
-        </table>
+          <p className="muted note">
+            Unparsed: {formatPercentFine(records.unparsed_fraction)} of records. Unclassified:{' '}
+            {formatCount(sessions.unclassified)} {sessions.unclassified === 1 ? 'session' : 'sessions'}
+            {sessions.unclassified > 0
+              ? ` (${formatPercent(sessions.unclassified_fraction_sessions)} of sessions, ${formatPercent(sessions.unclassified_fraction_records)} of records)`
+              : ''}
+            .
+          </p>
+        </div>
       </div>
     </section>
   );
