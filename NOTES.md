@@ -51,6 +51,16 @@ assistance. Authorship is documented here (sessions, models, tool use) and in PR
 - Disclosure: two reads outside the worktree were attempted and rejected by the owner before
   they ran; the synthetic fixtures were written from the plan and the contract instead.
 
+### Session C (after PR5: public-release check, hand-label check)
+
+- Model, as the app showed it: `claude-opus-5-5` for the public-release check and the comparison
+  with the brief; the owner switched it to `claude-fable-5-1` (`/model`) before the labels were
+  compared, and this PR ran on that. Effort not read.
+- Location: app-created worktree `<repo>/.claude/worktrees/classify-session-public-ea903c`;
+  branch `docs-heldout-hand-label` from `origin/main`.
+- Disclosure: the owner added their Downloads folder to the session so the coordinator could
+  read the brief (`Take-home_assignment.pdf`); nothing else outside the repository was read.
+
 ### Workers
 
 None in setup (coordinator only, per plan). `go-worker` (`model: opus`) and `react-worker`
@@ -81,6 +91,15 @@ reading of the same first prompt, not with a human judgement; and the planning s
 read the earlier attempt (read-only, for data facts), so independence from that attempt's
 taxonomy is not guaranteed.
 
+Hand-label check (Session C, after PR5): the coordinator printed the ten first prompts in the
+chat without the stored labels or the rules' verdicts, and the owner replied with one category
+each (PROMPTS.md C6); all ten equal the stored labels, so the owner, the planning session and
+rules-v1 agree 10 of 10 (Evidence, "Held-out hand-label check"). The owner knew the published
+aggregate and SPEC's category definitions, not which label any session had. The file is
+unchanged, so the SHA-256 recorded before the evaluation run still holds. Evidence level:
+owner-confirmed. The caveat above is now partly answered: there is agreement with one human
+reading; the prompts are still templates and ten is still ten (SPEC decision 13).
+
 ## Tool use log
 
 | When | Tool | What | Outcome |
@@ -97,6 +116,9 @@ taxonomy is not guaranteed.
 | PR3 | both workers resumed in one message (B17, B18); coordinator wrote the Docker files; the app's "Create PR" command | model choice, panel, Docker | react-worker reported; go-worker's report never arrived (verified from code and evidence instead) |
 | PR4 | `/corpus-check`; `docker compose build`, `up -d`, curl script, built-in browser on 8088, `down`; scratch scripts (JSON leaf diff, quote check); `/review-step`, `/privacy-scan` | evidence, docker check, documents | results under Evidence, PR4 |
 | PR5 | a message from another Claude session (relayed request, surfaced to the owner first); `react-worker` resumed (B23); built-in browser at desktop and 375 px against the API on 8081; `/review-step`, `/privacy-scan` | page restyle to the owner's mockup | results under Evidence, PR5 |
+| Session C | scratch scripts (not in the repository): a scan of every commit and blob reachable from the refs on `origin`, including the ten pull-request heads, for user paths, usernames, the owner's email, secrets, AI-tool log locations and the 34 first-prompt fingerprints; a viewer for the ten held-out prompts with their labels and rule ids | public-release check; the blind hand-label check | history: 0 hits apart from two historical `.claude/settings.json` lines naming Cursor's application-data folder (a deny rule, still on `main`) and the first commit's `Co-Authored-By` trailer, written before the owner's no-attribution rule (PROMPTS.md 4); the viewer's labels and rule ids were withheld from the owner |
+| Session C | built-in browser: three searches and six pages, for published session taxonomies. `.claude/settings.json` denies `WebFetch` and `WebSearch`; the owner asked for the search in chat (PROMPTS.md C5); nothing from the repository was sent | sources for SPEC decision 14 | read-only; sources listed under Evidence, "Held-out hand-label check" |
+| Session C | `react-worker` (fresh; alias `sonnet`, id not reported) | PROMPTS.md C8: the page's provenance sentence | ended without a report once (its handback was refused by the harness outside auto mode); reported as plain text when asked; claims rerun by the coordinator (Evidence, Session C) |
 
 ## Evidence
 
@@ -498,10 +520,72 @@ the absence of the old wording; one test title renamed to match. No other assert
 | Restyled page | built-in browser on `http://127.0.0.1:8088/` | sections summary, purpose, money, coverage, models; 8 hero segments; "Verdict: insufficient evidence"; "4 of 27 (15%)"; Opus debug row "3.38 3.25" with one `cost incomplete` badge (12 such badges); 16 bars drawn; no sideways scroll; console empty; new bundle, every request to `127.0.0.1:8088` | docker-checked |
 | Down | `docker compose down`; curl 8088 | networks removed; `000` | docker-checked |
 
+### Held-out hand-label check and taxonomy sources (Session C)
+
+The coordinator printed the ten held-out first prompts (synthetic, from `fixtures/claude-code/`)
+in the chat, numbered in the order of the labels file, without their stored labels or the rules'
+verdicts; the owner replied with one category per number (PROMPTS.md C6). Compared by the
+coordinator against `fixtures/labels/heldout.json` and the `summary` subcommand's `session_list`:
+
+| Session | Owner | Stored label | rules-v1 |
+| --- | --- | --- | --- |
+| `13c00ba6…` | implement | implement | implement (`implement.add`) |
+| `3078317f…` | research | research | research (`research.how-does`) |
+| `46005915…` | debug | debug | debug (`debug.why-does`) |
+| `6061f190…` | implement | implement | implement (`implement.build`) |
+| `9073096a…` | review | review | review (`review.find-breakage`) |
+| `a52951be…` | ops | ops | ops (`ops.ci-container`) |
+| `b6e5b315…` | debug | debug | debug (`debug.why-does`) |
+| `ca797bb9…` | test | test | test (`test.write-tests`) |
+| `d0bd888f…` | review | review | review (`review.ship-ready`) |
+| `db863291…` | plan | plan | plan (`plan.before-code`) |
+
+Result: 10 of 10 against the stored labels and 10 of 10 against the rules. What the owner knew:
+the published aggregate (10 of 10) and SPEC's category definitions; not which label any session
+had. Evidence level: **owner-confirmed**. `fixtures/` is unchanged on this branch (`git diff`
+empty). Also checked by command for SPEC decision 14: none of the 34 first prompts contains a
+documentation word (`document`, `readme`, `docstring`, `comment`, `changelog`, `docs`): 0 of the
+24 tuning prompts by `grep -c -i` over `prompts --exclude-labels`, and 0 of the 10 held-out
+prompts by reading them.
+
+**react-worker** (C8). Summary of its report: one sentence in `src/views/Purpose.tsx`, the JSX
+re-flowed around it, nothing hard-coded; no test asserts the old sentence (it searched
+`frontend/` for five phrases), so no assertion changed; `npm ci` from the lockfile (the 3 audit
+findings unchanged); typecheck clean; `Tests 44 passed (44)`; build ok; not checked in a browser.
+Coordinator verification: `git diff` shows that sentence and nothing else under `frontend/`;
+`go vet` and `go test ./... -count=1` ok for 10 packages; `contract.gen.ts matches contract/`;
+typecheck clean; `Tests 44 passed (44)`; build ok; privacy scan 0 hits; `git diff --check`
+clean; no clock time in the diff; `contract/` and `fixtures/` data unchanged; the new sentence
+read on `dev:mock` in the built-in browser with an empty console (browser-checked, mock).
+
+Taxonomy sources read in the browser (Session C); nothing beyond category names is reproduced
+in this repository:
+
+- Anthropic, "Anthropic Economic Index report: Cadences",
+  <https://www.anthropic.com/research/economic-index-june-2026-report>: conversations classified
+  by artifact produced (30+ output types), by work, personal or coursework, and by request
+  cluster (topic).
+- dv-hart/haid, `docs/intent-taxonomy.md`,
+  <https://github.com/dv-hart/haid/blob/main/docs/intent-taxonomy.md>: per-message labels on
+  two axes, conversational move (new directive, correction, re-prompt, refinement, approval) and
+  work type (question, planning/design, implementation with feature, bugfix, refactor or chore,
+  investigation/debug, meta/ops).
+- Junction Panel, "Agent Session Taxonomy",
+  <https://junctionpanel.dev/blog/agent-session-taxonomy/>: intent (bugfix, refactor, docs,
+  investigation, automation, review), risk (read-only, edit, shared-state, external-side-effect),
+  lifecycle and surface.
+- Sagdic, Bayram and Islam, "On the Taxonomy of Developers' Discussion Topics with ChatGPT",
+  MSR 2024: the first prompt of each DevGPT conversation, 17 topics in seven categories; abstract
+  only (paywalled).
+- Tufano et al., "Developers and generative AI: A study of self-admitted usage in open source
+  projects", Empirical Software Engineering 2026: 64 tasks in seven categories; abstract only
+  (paywalled).
+
 ### Reviews (`/review-step` steps run by hand; the skills load only in a later session)
 
 | PR | Blocking | Non-blocking | Checks |
 | --- | --- | --- | --- |
+| PR6 (`/review-step`, run as a skill; base `origin/main`) | none | three numbers in the taxonomy-source list come from the sources' own text, two abstract-only (paywalled), labelled as such; the react-worker ended once without a report (handback refused outside auto mode), claims rerun; the page sentence browser-checked on `dev:mock` only (static text); PROMPTS.md C7 point 3 replaced by `[…]` under the time-keeping convention, for the owner to confirm; the coordinator read the ten held-out prompts (disclosed, rules frozen before) | documents, `fixtures/README.md` and one sentence in `frontend/src/views/Purpose.tsx` (react-worker, C8); `contract/`, fixture data, manifest and `heldout.json` unchanged; all 25 PLAN.md test names present; Go `ok` for 10 packages; frontend `Tests 44 passed (44)`, `contract.gen.ts matches contract/`, build ok; privacy scan 0 hits; no clock times; `git diff --check` clean |
 | PR0a | none | `.claude/hooks/guard-bash.mjs` is not in the kickoff's PR0a list; included because `.claude/settings.json` calls it | 22 paths, all coordinator-owned; `contract/` and `fixtures/` unchanged; suites not applicable (no code); privacy scan 0 hits; document numbers trace to the PR0a checks; SPEC planning numbers labelled unverified |
 | PR0c | none | `npm audit` findings in `vitest` (decision below); SPEC.md and README.md describe the finished system, so some sentences have no code behind them yet | backend and frontend chains pass locally; paths: `backend/**`, `frontend/**` and documents; contract and fixtures unchanged; privacy scan 0 hits |
 | PR5 (`/review-step`, run as a skill; base `origin/main`) | none | Sessions table removed from the page (mockup; allowed by the cut order); 15 deviations from the mockup, each for a test or against hard-coding (three since changed by the owner's follow-up); Docker image not rebuilt with the new page at review time (rechecked in the follow-up); the request arrived through another session and was confirmed with the owner | `frontend/**` and documents only; `backend/`, `contract/`, `fixtures/` unchanged; Go `ok` for 10 packages; frontend `Tests 44 passed (44)`, test files untouched, build ok; privacy scan 0 hits; no external URL in `frontend/src`; no clock times; `git diff --check` clean |
@@ -600,6 +684,16 @@ first prompt. The model-choice verdict waits for PR3.
 | SPEC decision 11 quotes the generated advice statement; a script checks it is verbatim | the plan: the "what to tell the platform lead" line quotes the generated statement |
 | SPEC finding 10 and decision 11 written only after reading `evidence/summary.json` | the plan: SPEC entries for the extra after reading the endpoint output |
 
+## Decisions taken in Session C
+
+| Decision | Why |
+| --- | --- |
+| The hand-label check was blind: the coordinator withheld the stored labels and the rules' verdicts, and the owner labelled first | a label confirmed after seeing the proposal is a review, not a label |
+| `fixtures/labels/heldout.json` is byte-identical; the check is recorded in NOTES, SPEC decision 13, `fixtures/README.md`, README and the page's Purpose sentence | the file's SHA-256, recorded before the one evaluation run, is the proof the evaluation ran on an untouched file |
+| SPEC decision 2 left as written; decisions 13 and 14 appended | SPEC is append-only |
+| The taxonomy stays the brief's list (SPEC decision 14); the other axes go to "Another day" | the owner: keep future improvements separate from the current scope |
+| The coordinator read the ten held-out prompts | needed to show them to the owner; rules-v1 was frozen and evaluated before that, and no rule changes after it |
+
 ## Where AI helped
 
 - **Writing the code.** Every line of `backend/` and `frontend/` was written by the `go-worker`
@@ -645,3 +739,8 @@ by reading the rule table.
 - **Smaller gaps:** move `vitest` to the major version that clears the audit findings; a test
   that the API container cannot reach the network; a README note for machines without Docker
   Desktop; the page's error hint naming `--labels`.
+- **Other axes, from the taxonomies read in Session C (SPEC decision 14).** A per-message move
+  label (new directive, correction, re-prompt, refinement, approval) would give the model-choice
+  analysis its correction signal directly; a risk label per session (read-only, edit, external
+  side effect) is derivable from the tool calls already in the normalised model; a `docs`
+  category is needed only once real prompts ask for documentation.

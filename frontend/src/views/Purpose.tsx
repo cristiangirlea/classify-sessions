@@ -73,9 +73,9 @@ export function Purpose({ summary }: { summary: SummaryResponse }) {
         <p>
           {formatCount(heldout.labelled)} sessions were labelled before any rule was written and never used for tuning.
           The rules agree on {formatCount(heldout.agreements)} of them (method {classifier.method}). Agreement fraction:{' '}
-          {formatPercent(heldout.agreement_fraction)}. The labels were proposed by an AI from the first prompt and
-          accepted unchanged, so this measures consistency with an AI reading, not a human judgement, on a small set of
-          templated prompts.
+          {formatPercent(heldout.agreement_fraction)}. The labels were proposed by an AI from the first prompt and later
+          confirmed blind by the owner, one by one, so this measures agreement with one human reading of a small set of
+          templated prompts, not accuracy on real prompts.
         </p>
       )}
       {heldout.disagreements.length > 0 && (
