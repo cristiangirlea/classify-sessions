@@ -86,7 +86,8 @@ When a worker's claim is disproved, it goes in the NOTES.md "AI was wrong" table
 1. `go vet ./... && go test ./... -count=1` and the frontend chain above are green.
 2. `/corpus-check` run after any parser, rule or price change; its block pasted into NOTES.md.
 3. `/review-step` shows no blocking finding; `/privacy-scan` exits 0.
-4. PROMPTS.md has the PR's section with every prompt verbatim.
+4. PROMPTS.md has the PR's section with every prompt verbatim, under the two replacements its
+   header states (absolute paths, time-keeping text).
 
 ## Environment notes (Windows host)
 
