@@ -539,6 +539,88 @@ Run from frontend/ and quote exact result lines: `npm test`, `npm run typecheck`
 
 B26 was copied by hand from the call that sent it.
 
+## Session C (after PR5: public-release check, hand-label record)
+
+### C1. Owner → coordinator, session start
+
+```text
+can we make the classify-session public /
+```
+
+### C2. Owner → coordinator, after the coordinator asked whether the brief allows a public solution
+
+```text
+@"<downloads> [path replaced]\Take-home_assignment.pdf"
+```
+
+The owner's Downloads folder, outside the repository; the owner granted the folder to the
+session so the coordinator could read the brief.
+
+### C3. Owner → coordinator, after switching the model to `claude-fable-5-1` with `/model`
+
+```text
+do we currently respect the full pdf for this classify-sessions?
+```
+
+### C4. Owner → coordinator
+
+```text
+do we folow everything from the document? until now ?
+```
+
+### C5. Owner → coordinator
+
+```text
+are the labels ok ? can we keep them as ours? can you look over internet what other labels? we oculd use?
+```
+
+### C6. Owner → coordinator: the blind labels
+
+The coordinator had shown the ten held-out first prompts in the chat, numbered in the order of
+the labels file, without labels or rule ids; the numbers refer to that order (NOTES.md,
+Evidence, Session C).
+
+```text
+1. `implement`
+2. `research`
+3. `debug`
+4. `implement`
+5. `review`
+6. `ops`
+7. `debug`
+8. `test`
+9. `review`
+10. `plan`
+
+?
+```
+
+### C7. Owner → coordinator, PR6 instruction
+
+```text
+1. PR: Yes. Create a new branch from `main`, run `/review-step` and `/privacy-scan`, and open a draft PR. Do not merge without my approval.
+2. Taxonomy decision and “Another day” additions: Yes. Include both, but keep future improvements separate from the current scope.
+3. […]
+```
+
+### C8. Coordinator → react-worker, PR6 (a fresh worker)
+
+```text
+PR6, react-worker, branch docs-heldout-hand-label (already checked out; the repository root is the current working directory), same rules as before: frontend/ only, no git or gh, no new package, every value from the API. If frontend/node_modules is missing, run `npm ci` first (lockfile only).
+
+One sentence changes in `frontend/src/views/Purpose.tsx`, in the paragraph rendered when `heldout.labelled > 0`. Replace
+
+"The labels were proposed by an AI from the first prompt and accepted unchanged, so this measures consistency with an AI reading, not a human judgement, on a small set of templated prompts."
+
+with
+
+"The labels were proposed by an AI from the first prompt and later confirmed blind by the owner, one by one, so this measures agreement with one human reading of a small set of templated prompts, not accuracy on real prompts."
+
+No number is hard-coded; the counts stay bound to the API. Change nothing else. Do not change any test assertion unless one asserts the old sentence; then update only that assertion and report old → new.
+
+Run from frontend/ and quote exact result lines: `npm run typecheck`, `npm test`, `npm run build`. Report: files touched; commands with result lines; what you did not do.
+```
+
 ## Discarded first setup attempt, carried over verbatim from its PROMPTS.md
 
 ### D1. Owner → coordinator, before Step 0

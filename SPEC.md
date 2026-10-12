@@ -193,6 +193,32 @@ Each entry is a decision the brief leaves open, why it was taken, and what enfor
     itself before it rewrites `Host` for the API, so the API's loopback check is not bypassed by
     the proxy. Why: the container must keep the same boundary as the local run. Checked by
     `docker compose up` and curl (NOTES.md, docker-checked).
+13. **The held-out labels were hand-checked blind by the owner after the evaluation, and agree
+    10 of 10.** After PR5, the owner read the ten held-out first prompts, shown without their
+    stored labels or the rules' verdicts, and gave each a category from the taxonomy; all ten
+    equal the stored labels, and therefore the rules' verdicts. The owner knew the published
+    aggregate (10 of 10) and the category definitions in decision 7, not which label any session
+    had. Why: the brief asks for ten hand-labelled sessions, and decision 2 records that the
+    labels were AI-proposed; this check is the human judgement it lacked. What it changes: the
+    agreement figure now measures agreement with one human reading of ten templated prompts,
+    which is still a weak test, and decision 8's caveats stand. `fixtures/labels/heldout.json`
+    is unchanged, so the SHA-256 recorded before the evaluation run still holds. Evidence:
+    owner-confirmed, recorded in NOTES.md ("Held-out hand-label check").
+14. **The taxonomy is the brief's own example list, kept after reading other published
+    taxonomies.** The eight categories are the brief's examples, defined in decision 7.
+    Alternatives read after the fact (sources in NOTES.md): classes of *artifact* produced and
+    topic clusters, as the Anthropic Economic Index uses; per-message intent on two axes,
+    conversational move (new directive, correction, re-prompt, refinement, approval) and work
+    type (question, planning, implementation with feature, bugfix, refactor or chore,
+    investigation, meta/ops); and intent × risk (read-only, edit, shared-state, external side
+    effect) × lifecycle labels for managing sessions. Why keep the brief's list: it answers
+    "what was the session for", which is the question asked; the reviewer recognises it; it is
+    an enum in the frozen contract; and none of the alternatives offers better purpose
+    categories, they add other axes. The one purpose category the alternatives have and this
+    list lacks is documentation (`docs`): none of the 34 first prompts asks for it (checked by
+    command, NOTES.md), and a prompt that did would fall to `implement` or `unknown` under
+    rules-v1. Enforced by the contract's `taxonomy` enum (`TestExamplesDecodeStrictly`, `npm run
+    contract:check`).
 
 ## Out of scope
 
